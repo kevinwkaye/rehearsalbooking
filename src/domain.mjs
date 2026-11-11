@@ -1,0 +1,6 @@
+export function dateKey(year,monthZero,day){return `${year}-${String(monthZero+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
+export function monthCells(year,monthZero){const first=(new Date(Date.UTC(year,monthZero,1)).getUTCDay()+6)%7;const count=new Date(Date.UTC(year,monthZero+1,0)).getUTCDate();return [...Array(first).fill(null),...Array.from({length:count},(_,i)=>i+1)];}
+export function isValidDateKey(value){if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const [y,m,d]=value.split('-').map(Number);return y>=2020&&m>=1&&m<=12&&dateKey(y,m-1,d)===value&&new Date(Date.UTC(y,m-1,d)).getUTCDate()===d;}
+export function todayInLondon(now=new Date()){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);const get=t=>parts.find(p=>p.type===t)?.value;return `${get('year')}-${get('month')}-${get('day')}`;}
+export function describeDate(value){return new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(`${value}T12:00:00Z`));}
+export function times(){return Array.from({length:48},(_,i)=>`${String(Math.floor(i/2)).padStart(2,'0')}:${i%2?'30':'00'}`);}
