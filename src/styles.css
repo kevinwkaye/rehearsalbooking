@@ -7,3 +7,5 @@
 .audit-section{margin-top:32px;border-top:1px solid #3D4754;padding-top:24px}.audit-section h3{margin-bottom:12px}.audit-list{display:grid;gap:5px}.audit-line{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #343C46;padding:10px 0;font-size:.8rem}.audit-line strong{color:#D9E3E8;overflow-wrap:anywhere}.audit-line span{color:#91A2B0;flex:none}@media(max-width:500px){.audit-line{flex-direction:column}.audit-line span{font-size:.7rem}}
 
 .login-heading{font-size:1.35rem;margin:0 0 18px}.admin-login-link{display:block;margin:24px auto 0;color:#C3CCD6;background:none;border:0;text-decoration:underline;font-size:.85rem}.create-band-panel{background:#29313C;border:1px solid #404B58;border-radius:15px;padding:21px;margin:22px 0 7px}.create-band-panel h3{margin-bottom:5px}.create-band-panel .button.primary{align-self:flex-start;min-width:165px}
+
+.admin-subheading{margin:30px 0 16px}.admin-section>h3:not(.admin-subheading){margin:16px 0}.notice:not(.error):not(.success){margin-top:16px;padding:15px;border:1px solid #4A5562;background:#2B3340;border-radius:12px;color:#CBD4DE;line-height:1.5}

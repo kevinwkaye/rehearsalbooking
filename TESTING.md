@@ -1,34 +1,28 @@
-# Test plan and current verification scope
+# Testing checklist
 
-## Automated
+## Automatic checks
 
-`npm test` runs dependency-free unit tests for UK calendar date keys, month grid, leap days, London time at a BST boundary and 30-minute time selections.
+Run `npm test`, `npx tsc -b --noEmit` (or `npm run build`) and any configured GitHub Actions checks.
 
-`npm run build` performs TypeScript checking and a Vite production build (requires `npm install`).
+The fast test suite covers local calendar/time calculations and the admin-managed login contract. It is **not** a substitute for live database and device integration testing.
 
-## Integration tests requiring Supabase
+## Supabase and browser acceptance
 
-These need a deployed or local Supabase project with the migration applied. They cannot be convincingly tested against a fabricated client-side database.
+1. Verify unauthenticated `list_login_bands` returns approved band names/colours, but never passwords, emails or user IDs.
+2. Confirm public `auth.signUp()` attempts are blocked by the trigger and by disabled signups in Supabase settings.
+3. Verify login dropdown excludes deactivated accounts.
+4. Verify an ordinary band account cannot invoke `admin-band-account` for create or password changes.
+5. Admin creates two differently coloured bands and privately sets passwords.
+6. Band A signs in by choosing the name and entering the password. Wrong password fails.
+7. Band A reserves a full day. Band B sees the booking and cannot reserve the same date.
+8. Trigger simultaneous booking requests to the same date from both bands; exactly one succeeds.
+9. Band A reschedules its booking. If the destination is taken, its original booking is unchanged.
+10. Band A cancels. Band B can subsequently book the freed date.
+11. Band B cannot edit or cancel Band A's booking by crafting direct API requests.
+12. Admin changes Band A's password, tests new credentials and deactivates Band A when needed.
+13. Calendar reads and writes are correct around British Summer Time changes.
+14. Test iPhone, Android, mobile browser and desktop, including install and notification permission handling.
+15. Confirm in-app notifications still work when browser push notifications are disabled.
+16. Verify administrator role cannot be granted by editing user metadata from the frontend.
 
-1. Register two bands with distinct emails and case-insensitively distinct names; reject duplicate band names.
-2. Check both new profiles have `role=band`, `status=pending`. They cannot read bands or bookings.
-3. Promote a sole admin using the SQL editor. Approve both profiles; verify read access then activates.
-4. Create a booking as Band A; Band B should see it but must not be able to change it.
-5. In parallel, as Band A and Band B, attempt to create a booking for the same date: exactly one may succeed.
-6. Try inserting directly into `bookings` and updating another band's booking with client credentials: expect RLS/permissions failure.
-7. Reschedule Band A into a date occupied by Band B: original booking must stay intact.
-8. Cancel a booking, then rebook its date with another band. Verify the cancelled history remains.
-9. As an approved band, invoke admin status/edit RPCs: expect rejection. As a pending member, invoke booking RPCs: expect rejection.
-10. Change an approved band to deactivated; its existing session must no longer access the calendar or RPCs.
-11. Generate a recovery link using the admin's JWT; ensure a band user's JWT gets 403.
-12. Test booking notifications through Realtime and device push, if enabled.
-13. Repeat dates around March and October BST clock changes and around New Year.
-
-## Physical devices
-
-- iPhone Safari and Home Screen installation, Web Push permission and receiving a notification.
-- Android Chrome installation, permission and receiving a notification.
-- Small screen calendar readability, date picker and time dropdown.
-- Multiple band devices connected simultaneously.
-
-Any missing service credentials, unavailable deployments or missing physical-device testing must be reported before production handover. Do not describe tests as passing without running them.
+Record the manual test evidence before treating the deployment as production-ready.

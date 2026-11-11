@@ -1,5 +1,5 @@
 project_id = "the-bunkface-booking-boutique"
-[functions.admin-recovery]
-verify_jwt = false
+[functions.admin-member-access]
+verify_jwt = true
 [functions.push-dispatch]
 verify_jwt = false

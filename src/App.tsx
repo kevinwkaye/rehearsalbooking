@@ -15,52 +15,68 @@ const getMonthTitle=(year:number,month:number)=>new Intl.DateTimeFormat('en-GB',
 function Logo({small=false}:{small?:boolean}){return <div className="logo"><span className="logo-mark"><Music2 size={small?21:27} strokeWidth={2.5}/></span><span><strong>{small?'Bunkface':'The Bunkface'}</strong><span className="logo-subtitle">Booking Boutique</span></span></div>;}
 function StatusMessage({error,success}:{error:string;success:string}){return <>{error&&<div role="alert" className="notice error">{error}</div>}{success&&<div role="status" className="notice success">{success}</div>}</>;}
 
-type LoginBand={id:string;name:string;colour:string};
-const bandLoginEmail=(id:string)=>`band-${id}@accounts.example.com`;
+type SignupBand={id:string;name:string;colour:string};
 
 function AuthScreen({onDone}:{onDone:()=>void}){
- const [adminLogin,setAdminLogin]=useState(false);
- const [bands,setBands]=useState<LoginBand[]>([]);
- const [bandId,setBandId]=useState('');
- const [email,setEmail]=useState('');
- const [password,setPassword]=useState('');
- const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const loadBands=useCallback(async()=>{
-   setLoading(true);
-   try{const options=await rpc<LoginBand[]>('list_login_bands');setBands(options||[]);setError('');}
-   catch{setError('Could not load the bands. Try again in a moment.');}
-   finally{setLoading(false);}
- },[]);
- useEffect(()=>{void loadBands();},[loadBands]);
- async function submit(event:FormEvent){event.preventDefault();if(!adminLogin&&!bandId)return;
-   setBusy(true);setError('');
-   try{
-     const loginEmail=adminLogin?email.trim().toLowerCase():bandLoginEmail(bandId);
-     const result=await db.auth.signInWithPassword({email:loginEmail,password});
-     if(result.error)throw result.error;
-     onDone();
-   }catch{setError(adminLogin?'Email or password not recognised.':'Password not recognised. Ask the administrator to check it.');}
-   finally{setBusy(false);}
+ const [mode,setMode]=useState<'login'|'signup'>('login');
+ const [name,setName]=useState(''),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState('');
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');
+ async function submit(event:FormEvent){event.preventDefault();setBusy(true);setError('');setSuccess('');
+  try{
+   if(mode==='signup'){
+    if(name.trim().length<2||name.trim().length>80)throw new Error('Enter your name (2–80 characters).');
+    if(password.length<10)throw new Error('Choose a password of at least 10 characters.');
+    if(password!==confirm)throw new Error('The passwords do not match.');
+    const {data,error:signUpError}=await db.auth.signUp({email:email.trim().toLowerCase(),password,options:{data:{contact_name:name.trim()}}});
+    if(signUpError)throw signUpError;
+    if(data.session){onDone();return;}
+    setSuccess('Account created. If email confirmation is enabled, please contact the administrator to activate your account.');
+   }else{
+    const {error:signInError}=await db.auth.signInWithPassword({email:email.trim().toLowerCase(),password});
+    if(signInError)throw signInError;
+    onDone();
+   }
+  }catch(err){setError(readableError(err));}finally{setBusy(false);}
  }
  return <main className="auth-shell"><section className="auth-card"><Logo/>
-   <p className="auth-lead">Find your band, enter the password and get booking. Dead easy.</p>
-   <h1 className="login-heading">{adminLogin?'Admin sign in':'Book the rehearsal room'}</h1>
-   <form onSubmit={submit} className="form-stack">
-    {adminLogin?<label>Email address<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Admin email address"/></label>:
-    <label>Choose your band
-      <select required value={bandId} onChange={e=>setBandId(e.target.value)} disabled={loading} aria-label="Choose your band">
-       <option value="">{loading?'Loading bands…':'Select your band'}</option>
-       {bands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
-      </select>
-    </label>}
-    <label>Password<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Band password"/></label>
-    {error&&<div className="notice error" role="alert">{error}</div>}
-    <button className="button primary full" type="submit" disabled={busy||loading&&!adminLogin}>{busy?'Signing in…':adminLogin?'Admin sign in':'Open calendar'} <ArrowRight size={17}/></button>
-   </form>
-   {!adminLogin&&bands.length===0&&!loading&&<button type="button" className="subtle-link" onClick={()=>void loadBands()}>Refresh band list <RefreshCw size={15}/></button>}
-   <button className="admin-login-link" type="button" onClick={()=>{setAdminLogin(!adminLogin);setError('');setPassword('');}}>{adminLogin?'← Back to band login':'Administrator login'}</button>
-   <p className="fineprint">Need a password? Ask the room administrator. No sign-up required.</p>
+  <p className="auth-lead">Less chat, more music. Get your practices booked in a few taps.</p>
+  <h1 className="login-heading">{mode==='signup'?'Create your account':'Sign in to your bookings'}</h1>
+  <form onSubmit={submit} className="form-stack">
+   {mode==='signup'&&<label>Your name<input value={name} required minLength={2} maxLength={80} autoComplete="name" placeholder="e.g. James" onChange={e=>setName(e.target.value)}/></label>}
+   <label>Email address<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/></label>
+   <label>Password<input type="password" required minLength={mode==='signup'?10:undefined} autoComplete={mode==='signup'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder={mode==='signup'?'At least 10 characters':'Your password'}/></label>
+   {mode==='signup'&&<label>Confirm password<input type="password" autoComplete="new-password" required value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Enter it again"/></label>}
+   <StatusMessage error={error} success={success}/>
+   <button className="button primary full" type="submit" disabled={busy}>{busy?'One moment…':mode==='signup'?'Create account':'Open calendar'} <ArrowRight size={17}/></button>
+  </form>
+  <button className="admin-login-link" type="button" onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirm('');setError('');setSuccess('');}}>{mode==='login'?'New here? Create an account':'Already registered? Sign in'}</button>
+  <p className="fineprint">You'll choose your band once after signing up. If it changes, the administrator can sort it.</p>
  </section><p className="auth-footer">THE BUNKFACE BOOKING BOUTIQUE · LESS CHAT, MORE MUSIC</p></main>;
+}
+
+function ChooseBandScreen({onDone,onLogout}:{onDone:()=>void;onLogout:()=>void}){
+ const [bands,setBands]=useState<SignupBand[]>([]),[selected,setSelected]=useState('');
+ const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const load=useCallback(async()=>{setLoading(true);try{setBands(await rpc<SignupBand[]>('list_available_bands')||[]);setError('');}catch(e){setError(readableError(e));}finally{setLoading(false);}},[]);
+ useEffect(()=>{void load();},[load]);
+ async function choose(e:FormEvent){e.preventDefault();if(!selected)return;setBusy(true);setError('');try{await rpc('choose_band_once',{p_band_id:selected});onDone();}catch(e){setError(readableError(e));}finally{setBusy(false);}}
+ return <main className="auth-shell"><section className="auth-card"><Logo/><h1 className="login-heading">Which band are you in?</h1>
+  <p className="auth-lead">Choose carefully! This is a one-time choice. Only the administrator can change it later.</p>
+  <form onSubmit={choose} className="form-stack"><label>Your band<select value={selected} onChange={e=>setSelected(e.target.value)} required disabled={loading}><option value="">{loading?'Loading bands…':'Select your band'}</option>{bands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+   <StatusMessage error={error} success=""/>
+   <button type="submit" className="button primary full" disabled={busy||!selected}>{busy?'Saving…':'Join this band'} <ArrowRight size={17}/></button>
+  </form>
+  {!loading&&bands.length===0&&<div className="notice">No bands have been created yet. Ask the administrator to add yours.</div>}
+  <button className="admin-login-link" onClick={onLogout}>Log out</button>
+ </section></main>;
+}
+
+function ChangePasswordScreen({onDone,onLogout}:{onDone:()=>void;onLogout:()=>void}){
+ const [password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ async function save(e:FormEvent){e.preventDefault();if(password!==confirm){setError('The passwords do not match.');return;}setBusy(true);setError('');try{const {error}=await db.auth.updateUser({password});if(error)throw error;await rpc('complete_password_change');onDone();}catch(e){setError(readableError(e));}finally{setBusy(false);}}
+ return <main className="auth-shell"><section className="auth-card"><Logo/><h1 className="login-heading">Set a new password</h1><p className="auth-lead">The administrator reset your login. Choose your own password to continue.</p>
+  <form className="form-stack" onSubmit={save}><label>New password<input autoComplete="new-password" type="password" value={password} minLength={10} required onChange={e=>setPassword(e.target.value)}/></label><label>Confirm password<input autoComplete="new-password" type="password" minLength={10} required value={confirm} onChange={e=>setConfirm(e.target.value)}/></label><StatusMessage error={error} success=""/><button type="submit" className="button primary full" disabled={busy}>Save password</button></form>
+  <button className="admin-login-link" onClick={onLogout}>Log out</button></section></main>;
 }
 
 function BookingDialog({date,booking,band,allBands,myBandId,admin,onClose,onSaved}:{date:string;booking:Booking|null;band:Band|null;allBands:Band[];myBandId:string|null;admin:boolean;onClose:()=>void;onSaved:()=>void}){
@@ -126,60 +142,49 @@ async function disablePush(userId:string):Promise<string>{
 }
 
 function AdminPanel({profiles,bands,bookings,audits,onRefresh,onMessage}:{profiles:Profile[];bands:Band[];bookings:Booking[];audits:Audit[];onRefresh:()=>void;onMessage:(text:string)=>void}){
- const [edit,setEdit]=useState<string|null>(null),[form,setForm]=useState({name:'',member_count:4,colour:'#74B8A7',contact_name:''});
- const [newBand,setNewBand]=useState({name:'',member_count:4,colour:STUDIO_COLOURS[0],password:''});
+ const [newBand,setNewBand]=useState({name:'',member_count:4,colour:STUDIO_COLOURS[0]});
+ const [edit,setEdit]=useState<Band|null>(null),[editForm,setEditForm]=useState({name:'',member_count:4,colour:''});
+ const [changing,setChanging]=useState<Profile|null>(null),[newBandId,setNewBandId]=useState('');
  const [passwordTarget,setPasswordTarget]=useState<Profile|null>(null),[newPassword,setNewPassword]=useState('');
  const [busy,setBusy]=useState<string|null>(null),[error,setError]=useState('');
  const members=profiles.filter(p=>p.role==='band');
- async function createBand(event:FormEvent){event.preventDefault();setBusy('create');setError('');
-  try{
-   if(newBand.password.length<10)throw new Error('Use a password of at least 10 characters.');
-   const {data,error}=await db.functions.invoke('admin-band-account',{body:{action:'create',...newBand}});
-   if(error||data?.error)throw new Error(data?.error||'Could not create band account.');
-   setNewBand({name:'',member_count:4,colour:STUDIO_COLOURS[(members.length+1)%STUDIO_COLOURS.length],password:''});
-   onMessage('Band created. Share the band name and password privately with the band.');onRefresh();
-  }catch(e){setError(readableError(e));}finally{setBusy(null);}
- }
- async function changePassword(event:FormEvent){event.preventDefault();if(!passwordTarget)return;
-  setBusy(passwordTarget.id);setError('');
-  try{
-   if(newPassword.length<10)throw new Error('Use a password of at least 10 characters.');
-   const {data,error}=await db.functions.invoke('admin-band-account',{body:{action:'set_password',user_id:passwordTarget.id,password:newPassword}});
-   if(error||data?.error)throw new Error(data?.error||'Unable to change password.');
-   setPasswordTarget(null);setNewPassword('');onMessage('Band password updated. Share the new password privately.');onRefresh();
-  }catch(e){setError(readableError(e));}finally{setBusy(null);}
- }
- async function changeStatus(id:string,status:'approved'|'rejected'|'deactivated'){
-  setBusy(id);setError('');try{await rpc('admin_set_status',{p_user_id:id,p_status:status});onMessage(`Account ${status}.`);onRefresh();}catch(e){setError(readableError(e));}finally{setBusy(null);}}
- async function saveBand(){if(!edit)return;setBusy(edit);setError('');try{await rpc('admin_update_band',{p_band_id:edit,p_name:form.name,p_count:form.member_count,p_colour:form.colour,p_contact:form.contact_name});setEdit(null);onMessage('Band details updated.');onRefresh();}catch(e){setError(readableError(e));}finally{setBusy(null);}}
- function startEdit(p:Profile){const band=bands.find(b=>b.id===p.band_id);if(!band)return;setEdit(band.id);setForm({name:band.name,member_count:band.member_count,colour:band.colour,contact_name:p.contact_name});}
- return <section className="admin-section"><div className="section-heading"><div><span className="eyebrow">MANAGEMENT</span><h2>Band accounts</h2><p>You create the bands and passwords. They just sign in and book.</p></div></div>
+ async function createBand(e:FormEvent){e.preventDefault();setBusy('create');setError('');try{
+  await rpc('admin_create_band',{p_name:newBand.name,p_count:newBand.member_count,p_colour:newBand.colour});
+  setNewBand({name:'',member_count:4,colour:STUDIO_COLOURS[(bands.length+1)%STUDIO_COLOURS.length]});onMessage('Band created. Members can now choose it during sign-up.');onRefresh();
+ }catch(e){setError(readableError(e));}finally{setBusy(null);}}
+ async function saveBand(e:FormEvent){e.preventDefault();if(!edit)return;setBusy(edit.id);setError('');try{
+  await rpc('admin_update_band',{p_band_id:edit.id,p_name:editForm.name,p_count:editForm.member_count,p_colour:editForm.colour,p_contact:''});setEdit(null);onMessage('Band updated.');onRefresh();
+ }catch(e){setError(readableError(e));}finally{setBusy(null);}}
+ async function changeStatus(id:string,status:'approved'|'rejected'|'deactivated'){setBusy(id);setError('');try{await rpc('admin_set_status',{p_user_id:id,p_status:status});onMessage(`Member ${status}.`);onRefresh();}catch(e){setError(readableError(e));}finally{setBusy(null);}}
+ async function saveMemberBand(e:FormEvent){e.preventDefault();if(!changing)return;setBusy(changing.id);setError('');try{await rpc('admin_change_member_band',{p_user_id:changing.id,p_band_id:newBandId});setChanging(null);onMessage('Band assignment updated.');onRefresh();}catch(e){setError(readableError(e));}finally{setBusy(null);}}
+ async function resetPassword(e:FormEvent){e.preventDefault();if(!passwordTarget)return;setBusy(passwordTarget.id);setError('');try{
+  if(newPassword.length<10)throw new Error('Use at least 10 characters for the temporary password.');
+  const {data,error}=await db.functions.invoke('admin-member-access',{body:{action:'reset_password',user_id:passwordTarget.id,password:newPassword}});
+  if(error||data?.error)throw new Error(data?.error||'Unable to reset password');
+  setPasswordTarget(null);setNewPassword('');onMessage('Temporary password set. Send it privately to the member; they will change it at next sign-in.');onRefresh();
+ }catch(e){setError(readableError(e));}finally{setBusy(null);}}
+ const startEdit=(band:Band)=>{setEdit(band);setEditForm({name:band.name,member_count:band.member_count,colour:band.colour});};
+ return <section className="admin-section">
+  <div className="section-heading"><span className="eyebrow">MANAGEMENT</span><h2>Bands and members</h2><p>Create the bands here. Every musician creates their own login and selects one band.</p></div>
   {error&&<div className="notice error" role="alert">{error}</div>}
-  <form onSubmit={createBand} className="create-band-panel form-stack">
-   <h3>Create a band account</h3>
-   <label>Band name<input required maxLength={80} minLength={2} value={newBand.name} onChange={e=>setNewBand({...newBand,name:e.target.value})} placeholder="e.g. The Fuzz"/></label>
-   <label>Number of members<input type="number" min="1" max="50" required value={newBand.member_count} onChange={e=>setNewBand({...newBand,member_count:Number(e.target.value)})}/></label>
-   <label>Band colour<div className="colour-options">{STUDIO_COLOURS.map(c=><button type="button" key={c} className={`colour-chip ${newBand.colour===c?'active':''}`} aria-label={`Band colour ${c}`} onClick={()=>setNewBand({...newBand,colour:c})} style={{background:c}}>{newBand.colour===c&&<Check size={18} color={hexIsLight(c)?'#17202B':'#FFFFFF'}/>}</button>)}</div></label>
-   <label>Set band password<input type="password" autoComplete="new-password" required minLength={10} value={newBand.password} onChange={e=>setNewBand({...newBand,password:e.target.value})} placeholder="At least 10 characters"/></label>
-   <button className="button primary" type="submit" disabled={busy!==null}><Plus size={17}/>{busy==='create'?'Creating…':'Create band'}</button>
+  <form className="create-band-panel form-stack" onSubmit={createBand}><h3>Add a band</h3>
+   <label>Band name<input required minLength={2} maxLength={80} value={newBand.name} onChange={e=>setNewBand({...newBand,name:e.target.value})} placeholder="e.g. The Fuzz"/></label>
+   <label>Expected members (information only)<input required type="number" min="1" max="50" value={newBand.member_count} onChange={e=>setNewBand({...newBand,member_count:Number(e.target.value)})}/></label>
+   <label>Band colour<div className="colour-options">{STUDIO_COLOURS.map(c=><button type="button" aria-label={`Choose colour ${c}`} key={c} className={`colour-chip ${newBand.colour===c?'active':''}`} style={{background:c}} onClick={()=>setNewBand({...newBand,colour:c})}>{newBand.colour===c&&<Check size={18} color={hexIsLight(c)?'#17202B':'#FFFFFF'}/>}</button>)}</div></label>
+   <button type="submit" className="button primary" disabled={busy!==null}><Plus size={17}/>{busy==='create'?'Creating…':'Add band'}</button>
   </form>
-  <div className="stat-grid"><div><b>{members.length}</b><span>Total bands</span></div><div><b>{members.filter(p=>p.status==='approved').length}</b><span>Active bands</span></div><div><b>{bookings.filter(b=>b.status==='confirmed').length}</b><span>Bookings</span></div></div>
-  <div className="band-list">{members.length===0?<p className="empty">No bands added yet.</p>:members.map(p=>{const b=bands.find(b=>b.id===p.band_id);return <article className="band-admin-card" key={p.id}>
-   <div className="band-admin-head"><span className="band-dot large" style={{background:b?.colour||'#888'}}/><div><strong>{b?.name||'Unknown band'}</strong><small>{b?.member_count||'?'} members</small></div><span className={`status-tag ${p.status}`}>{p.status}</span></div>
-   <div className="band-actions">
-    {p.status==='approved'?<button className="button subtle small" onClick={()=>changeStatus(p.id,'deactivated')} disabled={busy!==null}>Deactivate</button>:<button className="button primary small" onClick={()=>changeStatus(p.id,'approved')} disabled={busy!==null}>Activate</button>}
-    <button className="button subtle small" onClick={()=>startEdit(p)}>Edit band</button>
-    <button className="button subtle small" onClick={()=>{setPasswordTarget(p);setNewPassword('');}} disabled={busy!==null}>Change password</button>
-   </div>
-  </article>;})}</div>
-  <div className="audit-section"><h3>Recent activity</h3>{audits.length===0?<p className="empty">No changes recorded yet.</p>:<div className="audit-list">{audits.slice(0,12).map(a=><div className="audit-line" key={a.id}><strong>{a.action.replaceAll('.',' · ')}</strong><span>{new Date(a.created_at).toLocaleString('en-GB')}</span></div>)}</div>}</div>
-  {passwordTarget&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setPasswordTarget(null);}}><form onSubmit={changePassword} className="modal form-stack" role="dialog" aria-modal="true" aria-label="Change band password"><div className="modal-header"><span className="eyebrow">PASSWORD</span><button type="button" className="icon-button" aria-label="Close" onClick={()=>setPasswordTarget(null)}><X/></button></div><h2>Change password</h2><p className="subdued">{bands.find(b=>b.id===passwordTarget.band_id)?.name}</p><label>New band password<input type="password" autoComplete="new-password" minLength={10} required value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="At least 10 characters"/></label><button type="submit" className="button primary full" disabled={busy!==null}>Save new password</button></form></div>}
-  {edit&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEdit(null);}}><div className="modal" role="dialog" aria-modal="true" aria-label="Edit band"><div className="modal-header"><span className="eyebrow">EDIT BAND</span><button className="icon-button" aria-label="Close" onClick={()=>setEdit(null)}><X/></button></div><div className="form-stack">
-   <label>Band name<input value={form.name} maxLength={80} onChange={e=>setForm({...form,name:e.target.value})}/></label>
-   <label>Contact name<input value={form.contact_name} maxLength={80} onChange={e=>setForm({...form,contact_name:e.target.value})}/></label>
-   <label>Number of members<input type="number" min="1" max="50" value={form.member_count} onChange={e=>setForm({...form,member_count:Number(e.target.value)})}/></label>
-   <label>Band colour<div className="colour-options">{STUDIO_COLOURS.map(c=><button key={c} type="button" aria-label={`Choose colour ${c}`} title={c} className={`colour-chip ${form.colour===c?'active':''}`} onClick={()=>setForm({...form,colour:c})} style={{background:c}}>{form.colour===c&&<Check size={18} color={hexIsLight(c)?'#17202B':'#FFFFFF'}/>}</button>)}</div><input aria-label="Custom hex colour" value={form.colour} onChange={e=>setForm({...form,colour:e.target.value})} maxLength={7}/></label>
-   <button className="button primary full" onClick={saveBand} disabled={busy!==null}>Save band details</button></div></div></div>}
+  <div className="stat-grid"><div><b>{bands.length}</b><span>Bands</span></div><div><b>{members.filter(p=>p.status==='approved').length}</b><span>Active members</span></div><div><b>{bookings.filter(b=>b.status==='confirmed').length}</b><span>Bookings</span></div></div>
+  <h3>Bands</h3><div className="band-list">{bands.length===0?<p className="empty">Create your first band above.</p>:bands.map(b=><article className="band-admin-card" key={b.id}><div className="band-admin-head"><span className="band-dot large" style={{background:b.colour}}/><div><strong>{b.name}</strong><small>{members.filter(p=>p.band_id===b.id).length} registered · {b.member_count} expected</small></div></div><div className="band-actions"><button className="button subtle small" onClick={()=>startEdit(b)}>Edit band</button></div></article>)}</div>
+  <h3 className="admin-subheading">Members</h3><div className="band-list">{members.length===0?<p className="empty">No one has signed up yet.</p>:members.map(p=><article className="band-admin-card" key={p.id}><div className="band-admin-head"><span className="band-dot large" style={{background:bands.find(b=>b.id===p.band_id)?.colour||'#596473'}}/><div><strong>{p.contact_name}</strong><small>{p.email} · {bands.find(b=>b.id===p.band_id)?.name||'Band not selected'}</small></div><span className={`status-tag ${p.status}`}>{p.status}</span></div><div className="band-actions">
+    {p.status==='pending'&&p.band_id&&<button className="button primary small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'approved')}>Approve</button>}
+    {p.status==='deactivated'||p.status==='rejected'?<button className="button subtle small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'approved')}>Reactivate</button>:<button className="button subtle small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'deactivated')}>Deactivate</button>}
+    <button className="button subtle small" onClick={()=>{setChanging(p);setNewBandId(p.band_id||bands[0]?.id||'');}}>Change band</button>
+    <button className="button subtle small" disabled={busy!==null} onClick={()=>{setPasswordTarget(p);setNewPassword('');}}>Reset password</button>
+   </div></article>)}</div>
+  <div className="audit-section"><h3>Recent activity</h3>{audits.length===0?<p className="empty">No activity yet.</p>:<div className="audit-list">{audits.slice(0,12).map(a=><div className="audit-line" key={a.id}><strong>{a.action.replaceAll('.',' · ')}</strong><span>{new Date(a.created_at).toLocaleString('en-GB')}</span></div>)}</div>}</div>
+  {edit&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={saveBand} aria-modal="true" role="dialog" aria-label="Edit band"><div className="modal-header"><span className="eyebrow">EDIT BAND</span><button type="button" className="icon-button" onClick={()=>setEdit(null)} aria-label="Close"><X/></button></div><h2>{edit.name}</h2><label>Band name<input required minLength={2} maxLength={80} value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></label><label>Expected members<input type="number" min="1" max="50" required value={editForm.member_count} onChange={e=>setEditForm({...editForm,member_count:Number(e.target.value)})}/></label><label>Colour<div className="colour-options">{STUDIO_COLOURS.map(c=><button type="button" key={c} className={`colour-chip ${editForm.colour===c?'active':''}`} aria-label={`Choose colour ${c}`} style={{background:c}} onClick={()=>setEditForm({...editForm,colour:c})}>{editForm.colour===c&&<Check size={18} color={hexIsLight(c)?'#17202B':'#FFFFFF'}/>}</button>)}</div></label><button className="button primary" disabled={busy!==null}>Save band</button></form></div>}
+  {changing&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={saveMemberBand} role="dialog" aria-modal="true" aria-label="Change member band"><div className="modal-header"><span className="eyebrow">MEMBER BAND</span><button type="button" className="icon-button" onClick={()=>setChanging(null)} aria-label="Close"><X/></button></div><h2>Move {changing.contact_name}</h2><p className="subdued">This can only be done by the administrator.</p><label>New band<select required value={newBandId} onChange={e=>setNewBandId(e.target.value)}>{bands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label><button className="button primary" disabled={busy!==null||!newBandId}>Change band</button></form></div>}
+  {passwordTarget&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={resetPassword} role="dialog" aria-modal="true" aria-label="Reset member password"><div className="modal-header"><span className="eyebrow">PASSWORD</span><button type="button" className="icon-button" onClick={()=>setPasswordTarget(null)} aria-label="Close"><X/></button></div><h2>Reset password</h2><p className="subdued">Set a temporary password for {passwordTarget.contact_name}. Share it privately. They must change it on login.</p><label>Temporary password<input required minLength={10} type="password" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)}/></label><button className="button primary" disabled={busy!==null}>Save temporary password</button></form></div>}
  </section>;
 }
 
@@ -234,7 +239,9 @@ export default function App(){
  if(!configured)return <div className="config-screen"><Logo/><h2>Almost ready to rock.</h2><p>The app needs its Supabase project configured before it can accept logins and bookings.</p><p>Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> as described in <code>DEPLOYMENT.md</code>.</p></div>;
  if(loading)return <div className="config-screen"><Logo/><p>Loading your rehearsal space…</p></div>;
  if(!session||!profile)return <AuthScreen onDone={()=>{void refresh();}}/>;
- if(!approved)return <main className="auth-shell"><section className="auth-card"><Logo/><div className="pending-icon"><Clock size={32}/></div><h1>{profile.status==='pending'?'Waiting for approval':profile.status==='rejected'?'Registration declined':'Account deactivated'}</h1><p className="auth-lead">{profile.status==='pending'?'Your account is awaiting administrator activation.':`Contact ${SUPPORT} if you think this is a mistake.`}</p><div className="button-row"><button className="button subtle" onClick={()=>void refresh()}><RefreshCw size={16}/> Check again</button><button className="button subtle" onClick={doLogout}><LogOut size={16}/> Log out</button></div></section></main>;
+ if(profile.role==='band'&&!profile.band_id&&profile.status==='pending')return <ChooseBandScreen onDone={()=>void refresh()} onLogout={()=>void doLogout()}/>;
+ if(profile.must_change_password)return <ChangePasswordScreen onDone={()=>void refresh()} onLogout={()=>void doLogout()}/>;
+ if(!approved)return <main className="auth-shell"><section className="auth-card"><Logo/><div className="pending-icon"><Clock size={32}/></div><h1>{profile.status==='pending'?'Waiting for approval':profile.status==='rejected'?'Registration declined':'Account deactivated'}</h1><p className="auth-lead">{profile.status==='pending'?'Your band has been selected. The administrator will approve your account shortly.':`Contact ${SUPPORT} if you think this is a mistake.`}</p><div className="button-row"><button className="button subtle" onClick={()=>void refresh()}><RefreshCw size={16}/> Check again</button><button className="button subtle" onClick={doLogout}><LogOut size={16}/> Log out</button></div></section></main>;
  return <div className="app-layout">
    <header className="site-header"><div className="header-inner"><Logo small/>
     <nav className="desktop-nav"><button className={panel==='calendar'?'active':''} onClick={()=>setPanel('calendar')}><CalendarDays size={17}/> Calendar</button>{admin&&<button className={panel==='admin'?'active':''} onClick={()=>setPanel('admin')}><ShieldCheck size={17}/> Admin</button>}</nav>
@@ -245,7 +252,7 @@ export default function App(){
     </div></div></header>
    {showMenu&&<div className="mobile-menu"><button onClick={()=>{setPanel('calendar');setShowMenu(false);}}>Calendar</button>{admin&&<button onClick={()=>{setPanel('admin');setShowMenu(false);}}>Admin</button>}<button onClick={doLogout}>Log out</button></div>}
    <main className="main-container">
-    <div className="top-intro"><div><span className="eyebrow">YOUR REHEARSAL SPACE</span><h1>{admin?'Welcome, boss.':`Alright, ${myBand?.name||profile.contact_name}.`}</h1><p>{admin?'Keep the room running smoothly, without the drama.':'Find a free day, pick your time and get practising.'}</p></div><div className="identity-chip"><span className="identity-dot" style={{background:myBand?.colour||'#EAA56F'}}/>{admin?'Administrator':myBand?.name}</div></div>
+    <div className="top-intro"><div><span className="eyebrow">YOUR REHEARSAL SPACE</span><h1>{admin?'Welcome, boss.':`Alright, ${profile.contact_name}.`}</h1><p>{admin?'Keep the room running smoothly, without the drama.':'Find a free day, pick your time and get practising.'}</p></div><div className="identity-chip"><span className="identity-dot" style={{background:myBand?.colour||'#EAA56F'}}/>{admin?'Administrator':myBand?.name}</div></div>
     {!online&&<div className="notice error" role="status">You are offline. Bookings are disabled until you reconnect.</div>}
     {error&&<div className="notice error" role="alert">{error}<button className="mini-close" onClick={()=>setError('')} aria-label="Dismiss"><X size={16}/></button></div>}
     {message&&<div className="notice success" role="status">{message}<button className="mini-close" onClick={()=>setMessage('')} aria-label="Dismiss"><X size={16}/></button></div>}
@@ -263,7 +270,7 @@ export default function App(){
     </>}
     <footer className="site-footer"><span>© The Bunkface Booking Boutique</span><a href={`mailto:${SUPPORT}`}>Need a hand?</a></footer>
    </main>
-   {chosen&&<BookingDialog key={chosen+String(selectedBooking?.id)} date={chosen} booking={selectedBooking} band={selectedBand} allBands={bands.filter(b=>profiles.some(p=>p.band_id===b.id&&p.status==='approved')||!admin)} myBandId={profile.band_id} admin={admin} onClose={()=>setChosen(null)} onSaved={saved}/>}
+   {chosen&&<BookingDialog key={chosen+String(selectedBooking?.id)} date={chosen} booking={selectedBooking} band={selectedBand} allBands={bands} myBandId={profile.band_id} admin={admin} onClose={()=>setChosen(null)} onSaved={saved}/>}
    {showNotifications&&<NotificationPanel notices={notices} onClose={()=>setShowNotifications(false)} onRefresh={()=>void refresh()}/>}
  </div>;
 }
