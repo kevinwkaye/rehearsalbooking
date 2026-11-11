@@ -1,46 +1,27 @@
 # Administrator guide
 
-## First-time setup
+## Accounts and bands
 
-Follow DEPLOYMENT.md to create the sole administrator. Sign in via **Administrator login**, below the band's sign-in form.
+There is exactly one administrator (Adam). Every other member creates their **own** account using a name, email and password, selects an existing band once and waits for approval. No shared band passwords are used.
 
-## Create a band
+On the **Admin** screen, create bands with a name, colour and expected number of members. The expected count is **informational only**, not a booking restriction. Review new registrations and approve them after checking the person's identity and band membership. Without transactional email, signup addresses are not verified automatically.
 
-Open **Admin → Create a band account**. Fill in:
+Band cards list their associated accounts. You can approve, deactivate, reassign or delete individual non-admin members; you can also reset a member's password to a temporary one and pass it to them privately. The administrator cannot delete their own admin identity.
 
-- Band name (the value users choose from the drop-down)
-- Number of members (informational only)
-- Band colour
-- Band password (at least 10 characters)
+To delete a band, cancel all its confirmed bookings first. A band with historical bookings is **archived**, preserving history; an empty band is deleted. Its members are unassigned and require a new band selection/approval. Adam can remain assigned to 88 Bunkface while holding the sole admin role.
 
-Press **Create band**. The new band will appear in the list immediately. Share only the band's name and password with its members using a trusted channel. Each band has **one shared login** usable on multiple devices. There are no invitations, self-registrations or confirmation votes.
+## BBBWP0.1 rehearsal approval
 
-## Change a password
+1. An approved band member proposes a future date and start time. Their own confirmation is automatic.
+2. If they are the band's **only approved member**, the rehearsal is booked immediately.
+3. If two or more currently approved members are in the band, each other member must **Confirm**. Any **Decline** closes the request. Requests awaiting votes don't block other bands.
+4. Once all required votes are in, the date is booked for the entire day. The database prevents a second band from confirming the same date.
+5. If a member's approved band affiliation changes while approval is pending, that request is invalidated and must be submitted again. Changing the informational expected member count does not affect it.
 
-Open **Admin**, find the band and select **Change password**. Enter a new password and save. Share it privately. The app does not send email and does not display or store the old password. Changing a password may not immediately log out existing sessions. Deactivate the band temporarily when urgent access revocation is needed.
+The administrator has **no separate approval vote** for other bands, but votes normally when they are an approved member of the requesting band. Existing cancellation/rescheduling actions remain governed by their current rules; unanimous cancellation approval is not part of BBBWP0.1.
 
-## Other management
+## Notifications
 
-- **Edit band:** rename it, change member count or colour.
-- **Deactivate:** remove the band from the public list and prevent booking updates. Existing reservations remain intact until you edit or cancel them.
-- **Activate:** restore access.
-- **Calendar:** click any booking to edit, move or cancel it.
-- **Recent activity:** inspect the audit list for changes.
+Tap the bell and choose **Enable phone alerts**. iPhone members must add the app to their Home Screen first. Every device must opt in individually. Users continue to see in-app notifications even without push. See [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md).
 
-The password cannot be viewed after it is set. If forgotten, issue a new one rather than trying to recover the original.
-
-## Support contact
-
-bunkface_booking_boutique@proton.me is an ordinary contact inbox, not an automated sender. No SMTP setup is needed for the app.
-
-## Removing bands and member accounts
-
-Band cards now contain an **Associated accounts** list. You can approve/deactivate/reassign/reset/delete individual non-admin accounts there. Deleting a member permanently removes their login (historical bookings remain), and cannot delete the sole administrator account.
-
-**Delete band** requires confirmation. Cancel all confirmed rehearsals for that band first. Members assigned to a deleted band become unassigned and pending approval so they can choose a different band. If the band has prior booking history, it is archived rather than deleting those records; otherwise it is removed. The admin is not deleted and can be reassigned to a different band later.
-
-The administrator may be assigned to a band, and can book for that band from the calendar. The administrator booking selector defaults to their band but allows booking for other bands when required.
-
-## Phone alerts
-
-Open the bell icon to find **Enable phone alerts** and **Disable phone alerts**. Notifications will only arrive outside the app after the server push setup in [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md) and browser/device permission have been completed. In-app notifications still appear without push.
+Support email: bunkface_booking_boutique@proton.me. No automated email delivery is enabled.

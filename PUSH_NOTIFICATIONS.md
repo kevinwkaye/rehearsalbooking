@@ -1,36 +1,39 @@
-# Push notifications: final setup
+# BBBWP0.1 phone push notifications
 
-The app uses encrypted Web Push and in-app notifications. Proposals notify **other members of the proposing band**, not every band and not a separate administrator. Once everyone approves, booking confirmation alerts are sent.
+The app already uses in-app notifications. Device push requires three confidential settings and a working database event trigger. Notifications sent to a band are addressed to **each approved member account** and their individually subscribed devices; the admin is not an extra approver for other bands.
 
-## What is already in source control
-- `src/pushPublicKey.ts` contains the **public** VAPID key. The private counterpart must never go in the website or repository.
-- `public/sw.js` displays notifications and opens the app's confirmation panel when tapped.
-- `supabase/functions/push-dispatch` encrypts and delivers a stored notification to each device subscription.
-- `supabase/migrations/202611110006_push_delivery_webhook.sql` installs `pg_net` and an INSERT trigger on `public.notifications` to call that function.
+## Architecture
 
-## Remaining private configuration
-1. The administrator uses the private handoff `Bunkface_push_notification_private_setup.txt` provided separately. Do **not** commit or paste its contents into chat.
-2. In Supabase Dashboard → **Edge Functions → Secrets**, add the values from that file for `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT`, `PUSH_DISPATCH_SECRET` and `APP_ORIGIN`.
-3. In Supabase Dashboard → **SQL Editor**, store the **same** `PUSH_DISPATCH_SECRET` in Vault by running privately (replace the placeholder; do not commit this SQL with the secret):
+- `src/pushPublicKey.ts`: **public** VAPID key used by browsers for subscriptions. This is safe to commit.
+- `public/sw.js`: receives push notifications and opens the app's notifications panel (`?notifications=1`).
+- `public.push_subscriptions`: stores each member's phone/browser subscription.
+- `public.notifications`: messages from booking proposals, confirmations, declines and changes.
+- `202611110006_push_delivery_webhook.sql`: installs `pg_net`, reads a dispatch secret from Vault and queues the push Edge Function when a new notification is inserted.
+- `supabase/functions/push-dispatch/index.ts`: checks the shared secret, reads encrypted push credentials from Supabase Vault via the **service-role-only** `bunkface_push_config()` RPC, sends encrypted push to each target subscription and marks successful sends.
 
-   ```sql
-   select vault.create_secret('THE_SECRET_FROM_PRIVATE_FILE', 'bunkface_push_dispatch_secret', 'Shared push webhook authentication secret');
-   ```
+## Private setup (do not put keys in chat or GitHub)
 
-   Only do this once, otherwise multiple named secrets cause ambiguity. The database migration looks it up by name at delivery time.
-4. Ensure `push-dispatch` Edge Function is deployed with **Verify JWT OFF**, since only the database trigger calls it using the separate shared `x-bunkface-secret` header. Other Supabase Edge Functions should keep JWT verification enabled.
-5. Once the private secrets are set, any new in-app notification inserts an asynchronous request for the dispatcher. Supabase Edge Function logs and `net._http_response` help troubleshoot failures.
+A separate private handoff contains the VAPID public key, VAPID private key and random dispatch secret. **The dispatcher in BBBWP0.1 reads ALL THREE from Supabase Vault. Edge Function environment variables alone are not sufficient.** An `APP_ORIGIN` secret is relevant to the separate admin-member-access function; the push dispatcher does not use it.
 
-## Device setup
-- **Android:** Open the app in Chrome, log in, tap bell → **Enable phone alerts**, and allow browser permission. The PWA can also be installed.
-- **iPhone:** Open in Safari → Share → **Add to Home Screen**. Launch the installed app from the Home Screen, sign in, tap bell → **Enable phone alerts**, and allow permission. iOS notifications require an installed Home Screen web app.
-- Each approved user and each device must enable alerts independently. The app remains usable if permission is denied.
+In Supabase Dashboard → SQL Editor, use private values from the handoff to create these secrets **once**. The SQL below contains placeholders, never actual secrets:
 
-## Test
-1. Create two approved accounts in the same band and set its expected member count to 2. Enable alerts on the second account's phone.
-2. Propose a future rehearsal from the first account. The second account should receive a push notification, even if the app is closed.
-3. Tap the notification to open the confirmation panel, then Confirm. The calendar should only now mark the date as booked.
-4. Test Decline and a competing band requesting the same day.
-5. If the phone doesn't alert, check notification permission, saved subscription count, Supabase Edge Function logs and the webhook/secret configuration.
+```sql
+select vault.create_secret('INSERT_VAPID_PUBLIC_KEY', 'bunkface_vapid_public_key', 'Public VAPID key');
+select vault.create_secret('INSERT_VAPID_PRIVATE_KEY', 'bunkface_vapid_private_key', 'Private VAPID key');
+select vault.create_secret('INSERT_DISPATCH_SECRET', 'bunkface_push_dispatch_secret', 'Private push webhook authentication');
+```
 
-**Do not send your private VAPID or webhook keys in chat or commit them to GitHub.**
+Do **not** create duplicates with the same name. Verify only the secret **names**, not decrypted values, when checking configuration. The public key must exactly match `src/pushPublicKey.ts`. The webhook secret should be a high-entropy random string of 32+ characters. The private key must never be exposed in frontend code.
+
+After the migration and Vault configuration, deploy `push-dispatch` with **Verify JWT OFF** (the private `x-bunkface-secret` header authenticates the database trigger). All other functions keep their usual authentication checks. The Edge Function's `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` must be available through its trusted server environment. Don't set a public Vite variable for either secret.
+
+## Phone setup and tests
+
+- **Android:** Open the deployed HTTPS site in Chrome, log in, tap the bell → **Enable phone alerts**, and allow notifications. Each device must opt in independently.
+- **iPhone:** Open in Safari, Share → **Add to Home Screen**, then open that installed app, log in and enable phone alerts. Ordinary Safari tabs cannot receive this installed-PWA push flow.
+- Start with **two approved people in the same band**. Enable push on the second member's phone. The first proposes a practice. Verify the second phone receives the alert with the app closed; tapping it should reveal the confirmation panel. Confirm from the second device and verify the date becomes booked.
+- Also test Decline, single-member immediate booking, a competing band's request, and revoked permissions. An inability to send push must never roll back an otherwise valid booking action.
+
+## Diagnostics and limitations
+
+Use Supabase Edge Function logs, `net._http_response`, the saved `push_subscriptions` count and device notification permissions. An in-app notification is always the fallback. This version is best-effort push delivery; a temporary push-service failure does **not** guarantee an automatic retry, so add monitored retry handling before promising guaranteed alerts.
