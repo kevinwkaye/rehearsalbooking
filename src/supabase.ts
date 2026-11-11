@@ -9,9 +9,9 @@ export async function rpc<T>(name:string,args:Record<string,unknown>={}):Promise
 export function readableError(err:unknown){const text=err instanceof Error?err.message:String(err);
  if(/bands_name_unique/i.test(text))return 'That band name is already registered.';
  if(/unique|already booked|BOOKED|duplicate key|23505/i.test(text))return 'Sorry, this date has just been booked. Please choose another day.';
- if(/database error saving new user/i.test(text))return 'Could not register this band. The band name may already be taken. Please check with the administrator.';
+ if(/database error saving new user/i.test(text))return 'Could not create your account. Check your details or ask the administrator for help.';
  if(/not authorised|not authorized|forbidden|PERMISSION/i.test(text))return 'You do not have permission to do that.';
  if(/past date/i.test(text))return 'Please choose today or a future date.';
- if(/invalid login credentials/i.test(text))return 'That email or password is incorrect.';
+ if(/invalid login credentials/i.test(text))return 'Email or password not recognised.';
  return text||'Something went wrong. Please try again.';
 }
