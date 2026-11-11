@@ -117,3 +117,15 @@ Redeploy `admin-member-access` using the updated function source. It now support
 When the administrator is a member of 88 Bunkface, their `profiles.band_id` must be assigned to that band in the database. This is managed as an admin-only assignment. No other user should be manually given administrator privileges.
 
 See [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md) for the future device-notification setup. Without the VAPID public/private keys, configured server-side dispatch, and a database webhook, notifications outside the app are not active yet.
+
+
+## New requirement: whole-band approval (November 2026)
+Apply both additional migrations in order, **after** the original four:
+- `supabase/migrations/202611110005_unanimous_band_confirmation.sql`
+- `supabase/migrations/202611110006_push_delivery_webhook.sql`
+
+The first migration creates proposals and member voting, locks each roster at request time, enforces the expected member count, and revokes the old instant-booking RPC for logged-in users. The second enables `pg_net` and links database notifications to the push dispatcher through a shared secret stored in Supabase Vault. If the push secret is not yet configured, in-app notifications still work. Do not put a private VAPID key or webhook secret into this repository.
+
+Cloudflare Pages rebuilds from the `main` branch. The public VAPID key is included in `src/pushPublicKey.ts`, so no extra Cloudflare variable is needed unless explicitly overriding it. The server needs `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT`, `PUSH_DISPATCH_SECRET` and `APP_ORIGIN` secrets in Supabase Edge Functions (use the separate private setup handoff). The same `PUSH_DISPATCH_SECRET` must be stored as `bunkface_push_dispatch_secret` in Supabase Vault. See `PUSH_NOTIFICATIONS.md`.
+
+Test with **at least two approved members** in one band whose expected count matches their registration count. Their in-app confirmations should create the booking only after every member has voted yes. Test competing requests for the same day, one decline, member reassignment and account deactivation.

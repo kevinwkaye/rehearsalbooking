@@ -26,3 +26,14 @@ The fast test suite covers local calendar/time calculations and the admin-manage
 16. Verify administrator role cannot be granted by editing user metadata from the frontend.
 
 Record the manual test evidence before treating the deployment as production-ready.
+
+
+## Whole-band proposal checks
+- Set a band to two expected members and approve two real accounts in that band. A proposal should be pending after the first member creates it.
+- Both members can view the proposal and confirmation progress. Only the second member has Confirm/Decline enabled.
+- Confirming creates one full-day booking; declining creates none. A third vote or duplicate confirm must be rejected safely.
+- Competing pending requests can exist for the same day, but only one can become confirmed.
+- An admin **not in the band** does not receive a voting request. Adam **in 88 Bunkface** votes as a member.
+- With an expected count of four but only one approved member, a new request is blocked until remaining members are approved or the admin updates the count.
+- Changing a member's band, deactivating an account or adjusting the band count invalidates pending requests.
+- Push notifications are tested separately on real Android and iPhone devices after private secrets are set; in-app notifications must always work.

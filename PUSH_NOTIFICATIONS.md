@@ -1,30 +1,36 @@
-# Phone push notifications: setup and verification
+# Push notifications: final setup
 
-The Bunkface Booking Boutique already has an in-app notification table, a PWA service worker, subscription registration and a `push-dispatch` Supabase Edge Function in source control. **Push notifications are not operational until the following server configuration is complete.**
+The app uses encrypted Web Push and in-app notifications. Proposals notify **other members of the proposing band**, not every band and not a separate administrator. Once everyone approves, booking confirmation alerts are sent.
 
-## How it will work
+## What is already in source control
+- `src/pushPublicKey.ts` contains the **public** VAPID key. The private counterpart must never go in the website or repository.
+- `public/sw.js` displays notifications and opens the app's confirmation panel when tapped.
+- `supabase/functions/push-dispatch` encrypts and delivers a stored notification to each device subscription.
+- `supabase/migrations/202611110006_push_delivery_webhook.sql` installs `pg_net` and an INSERT trigger on `public.notifications` to call that function.
 
-1. A signed-in, approved member installs the PWA (iPhone: **Add to Home Screen**) and taps **Enable phone alerts** in the bell panel.
-2. The device stores an individual Web Push subscription in `public.push_subscriptions`.
-3. A booking, cancellation or move inserts a notification into `public.notifications` for members of the *other bands* (and administrators).
-4. A Supabase Database Webhook for `public.notifications` INSERT invokes the `push-dispatch` Edge Function with a shared secret header.
-5. The Edge Function loads the notification and relevant subscriptions from the database, sends encrypted Web Push, and marks the notification delivered if no device delivery fails.
+## Remaining private configuration
+1. The administrator uses the private handoff `Bunkface_push_notification_private_setup.txt` provided separately. Do **not** commit or paste its contents into chat.
+2. In Supabase Dashboard → **Edge Functions → Secrets**, add the values from that file for `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT`, `PUSH_DISPATCH_SECRET` and `APP_ORIGIN`.
+3. In Supabase Dashboard → **SQL Editor**, store the **same** `PUSH_DISPATCH_SECRET` in Vault by running privately (replace the placeholder; do not commit this SQL with the secret):
 
-## Remaining setup
+   ```sql
+   select vault.create_secret('THE_SECRET_FROM_PRIVATE_FILE', 'bunkface_push_dispatch_secret', 'Shared push webhook authentication secret');
+   ```
 
-1. Generate a **VAPID keypair** using a supported Web Push tool, offline or in a trusted private environment. The **public key** is safe to publish; the **private key** must stay server-side.
-2. Add `VITE_VAPID_PUBLIC_KEY=<public-key>` to Cloudflare Pages environment variables and rebuild.
-3. Configure Edge Function secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT=mailto:bunkface_booking_boutique@proton.me`, and a random `PUSH_DISPATCH_SECRET`. Do not put private keys in Cloudflare's `VITE_` variables or in GitHub.
-4. Deploy `push-dispatch` with **JWT verification disabled only for that function**, because a database webhook authenticates using `x-bunkface-secret` instead of a user JWT. The function rejects absent or incorrect secrets.
-5. In Supabase **Database Webhooks**, configure an INSERT webhook on `public.notifications` to call `https://cpkywxtecixgmdsnfcun.supabase.co/functions/v1/push-dispatch`. Include the exact `x-bunkface-secret` header as the server secret. Restrict this secret to server-side configuration.
-6. Test on an Android browser, then on an iPhone with the PWA added to the Home Screen. Enable alerts separately on each device.
-7. Create a booking from a different band. Confirm an in-app notification is created, the webhook invokes the function, the push reaches the subscribed device and tapping it opens the app. Check Supabase Edge Function logs if it fails.
+   Only do this once, otherwise multiple named secrets cause ambiguity. The database migration looks it up by name at delivery time.
+4. Ensure `push-dispatch` Edge Function is deployed with **Verify JWT OFF**, since only the database trigger calls it using the separate shared `x-bunkface-secret` header. Other Supabase Edge Functions should keep JWT verification enabled.
+5. Once the private secrets are set, any new in-app notification inserts an asynchronous request for the dispatcher. Supabase Edge Function logs and `net._http_response` help troubleshoot failures.
 
-## Important limitations
+## Device setup
+- **Android:** Open the app in Chrome, log in, tap bell → **Enable phone alerts**, and allow browser permission. The PWA can also be installed.
+- **iPhone:** Open in Safari → Share → **Add to Home Screen**. Launch the installed app from the Home Screen, sign in, tap bell → **Enable phone alerts**, and allow permission. iOS notifications require an installed Home Screen web app.
+- Each approved user and each device must enable alerts independently. The app remains usable if permission is denied.
 
-- iPhone browser push generally requires the installed Home Screen web app. Permission must be granted after a user gesture.
-- Users with notifications disabled or unsupported devices can still book and read in-app notices.
-- A new booking should never be rolled back because Web Push delivery failed.
-- If two members share one device, each account/device subscription must be managed independently.
-- Avoid repeatedly prompting users who have denied notification permissions.
-- For production, add failure monitoring and retry rules; no service can guarantee delivery to every device.
+## Test
+1. Create two approved accounts in the same band and set its expected member count to 2. Enable alerts on the second account's phone.
+2. Propose a future rehearsal from the first account. The second account should receive a push notification, even if the app is closed.
+3. Tap the notification to open the confirmation panel, then Confirm. The calendar should only now mark the date as booked.
+4. Test Decline and a competing band requesting the same day.
+5. If the phone doesn't alert, check notification permission, saved subscription count, Supabase Edge Function logs and the webhook/secret configuration.
+
+**Do not send your private VAPID or webhook keys in chat or commit them to GitHub.**
