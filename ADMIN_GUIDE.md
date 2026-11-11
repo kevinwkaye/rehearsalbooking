@@ -1,34 +1,17 @@
-# Administrator guide
+# Administrator guide: individual member accounts
 
-## First-time setup
+The administrator creates **bands**, not shared band passwords. Each musician registers using their own name, email and password.
 
-Follow DEPLOYMENT.md to create the sole administrator. Sign in via **Administrator login**, below the band's sign-in form.
+## Bands and membership
+Create bands in Admin with a band name, colour and member count (informational). Members can then register and select one of these bands once. Their selection is locked; only the administrator can reassign them later.
 
-## Create a band
+Review pending members and verify that each person belongs to the selected band before approving. **Email ownership is not verified in this no-SMTP MVP.** You can approve, reject or deactivate members, and change the band assignment where necessary.
 
-Open **Admin → Create a band account**. Fill in:
+## Password resets
+Use the Admin member password reset action to set a temporary password. Share it securely via Proton Mail. The member must choose a new password after logging in. No automatic recovery emails are sent.
 
-- Band name (the value users choose from the drop-down)
-- Number of members (informational only)
-- Band colour
-- Band password (at least 10 characters)
+## Bookings
+Approved members can book a date immediately for their own band; the entire day is reserved. Other bands cannot take it. Members can edit and cancel their own band's bookings. The admin can correct all bookings. There is **no individual confirmation vote** for a booking.
 
-Press **Create band**. The new band will appear in the list immediately. Share only the band's name and password with its members using a trusted channel. Each band has **one shared login** usable on multiple devices. There are no invitations, self-registrations or confirmation votes.
-
-## Change a password
-
-Open **Admin**, find the band and select **Change password**. Enter a new password and save. Share it privately. The app does not send email and does not display or store the old password. Changing a password may not immediately log out existing sessions. Deactivate the band temporarily when urgent access revocation is needed.
-
-## Other management
-
-- **Edit band:** rename it, change member count or colour.
-- **Deactivate:** remove the band from the public list and prevent booking updates. Existing reservations remain intact until you edit or cancel them.
-- **Activate:** restore access.
-- **Calendar:** click any booking to edit, move or cancel it.
-- **Recent activity:** inspect the audit list for changes.
-
-The password cannot be viewed after it is set. If forgotten, issue a new one rather than trying to recover the original.
-
-## Support contact
-
-bunkface_booking_boutique@proton.me is an ordinary contact inbox, not an automated sender. No SMTP setup is needed for the app.
+## Initial setup
+See [DEPLOYMENT.md](DEPLOYMENT.md) for migration order, administrator bootstrap and Cloudflare hosting. The app's help address is `bunkface_booking_boutique@proton.me`.

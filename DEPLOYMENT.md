@@ -1,105 +1,60 @@
-# Deployment: The Bunkface Booking Boutique
+# Deploy The Bunkface Booking Boutique
 
-This version is **admin-provisioned**: band accounts are created only by the administrator. There is no user registration page and no email signup process.
+**CURRENT VERSION: Individual member accounts.** Each musician registers using their name, email and password, selects one admin-created band, and waits for administrator approval. Only the administrator can change an existing band assignment. Bookings reserve the full day immediately.
 
 ## 1. Supabase
+Use project `cpkywxtecixgmdsnfcun`, URL `https://cpkywxtecixgmdsnfcun.supabase.co`.
 
-Create a free Supabase project. Apply these SQL migrations **in order** using Supabase SQL Editor or Supabase CLI:
+In Supabase Authentication, enable **email/password registration** and **Allow new users to sign up**. Without SMTP, turn **Confirm email** OFF for the MVP. Registered email ownership is unverified, so the administrator must verify who is joining before approval.
 
-1. `supabase/migrations/202611110001_init.sql`
-2. `supabase/migrations/202611110002_admin_managed_band_login.sql`
+Apply these three SQL migrations **in order**, only once each, from the GitHub `supabase/migrations/` folder using Supabase SQL Editor or CLI:
 
-The first migration supplies the booking tables, policies and booking RPCs. The second disables public band registration and adds the safe public band-name listing RPC.
+1. `202611110001_init.sql`
+2. `202611110002_admin_managed_band_login.sql`
+3. `202611110003_individual_members.sql`
 
-**Important:** In Supabase Authentication settings, disable **Allow new users to sign up**. Normal band account creation uses a service-role-only Admin API, not public signup. Do not enable anonymous signups or public OAuth registrations.
+Migration 002 is a historical intermediate version. **Do not stop after 002**. Migration 003 enables individual signup and multiple members per band. If upgrading an existing live database, check its migration history before replaying scripts.
 
-The first-admin bootstrap must happen **after both migrations**. If upgrading from the older self-registration version with existing band accounts, the old credentials will not work with the new drop-down until those accounts are re-provisioned. This is not an automatic account migration.
+## 2. Bootstrap the sole administrator
+After all migrations, run `npm install` in a private local checkout and set environment variables **locally**, never in GitHub or ChatGPT:
+- `SUPABASE_URL`: `https://cpkywxtecixgmdsnfcun.supabase.co`
+- `SUPABASE_SERVICE_ROLE_KEY`: secret project key from Supabase Settings
+- `ADMIN_EMAIL`: e.g. `bunkface_booking_boutique@proton.me`
+- `ADMIN_PASSWORD`: strong password of at least 12 characters
 
-## 2. Administrator account
+Run `npm run bootstrap:admin` once. It refuses to create a second administrator. If you have already bootstrapped the administrator, do not run it again. Never expose the service-role key in frontend environment variables.
 
-Ensure `npm install` has completed. In a local terminal, set these environment variables **privately**:
-
-- `SUPABASE_URL`: Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY`: Server-only service role key
-- `ADMIN_EMAIL`: The administrator's email address (for example, the Proton Mail account)
-- `ADMIN_PASSWORD`: A strong password of at least 12 characters
-
-Run:
-
-```bash
-npm run bootstrap:admin
+## 3. Edge Functions
+Use Supabase CLI authenticated to your project:
+```sh
+npx supabase login
+npx supabase link --project-ref cpkywxtecixgmdsnfcun
+npx supabase functions deploy admin-member-access
 ```
+Leave JWT verification enabled. The current `admin-member-access` function allows the administrator to reset a member's password and force them to change it on their next login. The old `admin-band-account` and `admin-recovery` functions are obsolete.
 
-This script creates the **one and only** administrator, confirms the login email without sending mail, and creates an approved admin profile. Never put these secrets in `.env` files committed to GitHub. The script refuses to create a second administrator.
+For a deployed website, set the server-side Edge Function secret `APP_ORIGIN` to the exact HTTPS Pages origin, e.g. `https://your-project.pages.dev`. Keep private Supabase keys in Supabase server-side secrets only.
 
-If an administrator was already bootstrapped on a previous version, **do not** run it again. Existing admin credentials remain valid.
-
-## 3. Deploy administrator Edge Function
-
-Deploy `supabase/functions/admin-band-account/index.ts` with Supabase CLI:
-
-```bash
-npx supabase functions deploy admin-band-account
-```
-
-The function requires the existing Supabase secret values `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` and must have JWT verification enabled. Set the server secret `APP_ORIGIN` to the full deployed Cloudflare Pages URL (or `http://localhost:5173` for local development).
-
-The function independently validates the signed-in user's profile and rejects calls from anyone but the sole approved administrator. It can create a band or set a band's password. Passwords are processed only inside the trusted Auth Admin API.
-
-If upgrading, the old `admin-recovery` function is no longer used; remove any old deployed instance after verifying the new workflow.
+Push notification function deployment and VAPID configuration are optional for initial booking tests; in-app notifications still work.
 
 ## 4. Cloudflare Pages
+Connect GitHub repo `kevinwkaye/rehearsalbooking` and deploy branch `main`. Framework: **Vite**. Build: `npm run build`. Output: `dist`.
 
-Link GitHub repository `kevinwkaye/rehearsalbooking` to Cloudflare Pages.
+Configure **only public** environment variables:
+- `VITE_SUPABASE_URL=https://cpkywxtecixgmdsnfcun.supabase.co`
+- `VITE_SUPABASE_ANON_KEY`: publishable/anon key from Supabase Project Settings → API Keys
 
-- Framework preset: Vite
-- Build command: `npm run build`
-- Build output directory: `dist`
-- Environment variable: `VITE_SUPABASE_URL` = your Supabase project URL
-- Environment variable: `VITE_SUPABASE_ANON_KEY` = your publishable/anon key
+Never put the service-role key in Cloudflare frontend variables. Rebuild after changing variables. A `.pages.dev` URL is sufficient: no domain purchase or Proton upgrade is required.
 
-The `.pages.dev` URL is sufficient. A custom domain is optional. `public/_redirects` supports SPA routing.
+## 5. First-use test
+1. Admin signs in and creates a couple of bands, setting name, member count and colour (not passwords).
+2. Person signs up with their name, email and password.
+3. On first login they choose a band exactly once.
+4. Admin verifies that person and approves membership.
+5. Member signs in, books a free day and a start time; the whole day is reserved.
+6. Test another band cannot claim the same day, and verify cancellation, rescheduling, membership lock and admin reassignment.
 
-Set `APP_ORIGIN` in Supabase Edge Function secrets to the actual HTTPS Pages origin, and redeploy if necessary.
+## 6. Email limitation and security
+With email confirmation disabled, registered addresses are **unverified**. Admin approval is required before booking. Without SMTP, self-service password recovery emails will not be delivered; the administrator can issue a temporary password through the admin function and share it privately using the Proton Mail contact address. Test registration abuse controls before allowing public signup.
 
-**Never add `SUPABASE_SERVICE_ROLE_KEY` to Cloudflare frontend environment variables.**
-
-## 5. Create the first band
-
-1. Visit your app's Cloudflare URL.
-2. Select **Administrator login**.
-3. Enter the administrator email/password.
-4. Open **Admin** and complete **Create a band account**: band name, member count, colour and password.
-5. Give the band its name and password privately.
-6. Log out. The band name should now appear in the main public drop-down.
-7. Select the band, enter the password and test a rehearsal booking.
-8. Confirm another band cannot reserve the same day.
-
-The `@accounts.example.com` internal Auth aliases are synthetic identifiers and are **not for email delivery**. Do not try to send messages to them. Band members do not need email accounts.
-
-## 6. Password changes
-
-The administrator opens **Admin → Change password** for a band and assigns a new password (at least 10 characters). Share it privately. If a band loses access or a device is compromised, deactivate the band first to prevent new bookings while arranging replacement credentials. Existing sessions may remain active after a password change until their token is refreshed or expires.
-
-## 7. Push notifications (optional)
-
-Deploy `supabase/functions/push-dispatch` from the project and supply valid VAPID key secrets as described in that source. Test end-to-end on actual devices. An app cannot send push until browser permission is granted. iPhones require the app installed to the Home Screen for Web Push.
-
-The application remains fully usable if notifications are disabled or unavailable. Confirmed bookings are always visible in the calendar.
-
-## 8. Acceptance checklist
-
-- [ ] The public screen shows a band drop-down and password field, **no registration**.
-- [ ] Admin email login works via the separate link.
-- [ ] Only an admin can create band accounts and change passwords.
-- [ ] Newly created bands immediately appear in the drop-down.
-- [ ] A wrong band password is rejected.
-- [ ] Bookings reserve the entire date, with no double booking even under concurrent requests.
-- [ ] A band can only edit or cancel its own bookings.
-- [ ] Deactivated bands disappear from the public login list and cannot book.
-- [ ] In-app and device notifications are verified.
-- [ ] Phone and desktop rendering have been tested.
-
-## Free-tier limitations
-
-Supabase free projects can be paused after inactivity. Free hosting and push delivery have service and browser limitations. These should be understood before promising continuous availability.
+The CI build passing is **not** proof that the live database, auth, notifications and phone UX have been verified. Test them against a live project before inviting real bands. Free Supabase projects may pause after inactivity.
