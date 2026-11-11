@@ -59,3 +59,25 @@
  .calendar-page .calendar-day,.calendar-page .blank-day{padding:3px}
  .calendar-page .day-band{font-size:.52rem}
 }
+
+/* Band approval flow; keep the calendar the dominant element. */
+.pending-banner{display:flex;align-items:center;justify-content:space-between;flex:none;gap:8px;margin-bottom:7px;padding:8px 11px;background:#364034;border:1px solid #7E9C82;border-radius:10px;font-size:.8rem}
+.pending-banner .button{min-height:31px;padding:5px 12px}
+.calendar-day.pending-practice:not(.booked){border:1px dashed #E6BE7F;background:#39362F}
+.pending-day-label{display:block;margin-top:auto;color:#E8C590;font-size:clamp(.52rem,1vw,.72rem);line-height:1.1;font-weight:700}
+.practice-confirmation{padding:12px;background:#303845;border:1px solid #4E5A65;border-radius:11px;display:flex;flex-direction:column;gap:11px}
+.practice-confirmation.compact{padding:10px}
+.practice-confirmation-copy{display:flex;flex-direction:column;gap:4px}
+.practice-confirmation-copy strong{font-size:.87rem}
+.practice-confirmation-copy span,.practice-voted{font-size:.77rem;color:#AFBDCA}
+.practice-confirmation-buttons{display:flex;gap:8px}
+.practice-confirmation-buttons .button{flex:1;justify-content:center}
+.practice-roster{display:flex;flex-direction:column;gap:6px;font-size:.74rem;color:#D5DEE7}
+.practice-roster>span{display:flex;align-items:center;gap:7px}
+.vote-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9DA8B2}
+.vote-dot.confirmed{background:#83C5A4}.vote-dot.declined{background:#DA7878}
+.notification-requests{margin-bottom:17px;display:flex;flex-direction:column;gap:9px}
+.notification-requests h3{margin:0 0 4px;font-size:1rem}
+@media(max-width:740px){.pending-banner{font-size:.73rem;padding:6px 8px;margin-bottom:5px}.pending-day-label{font-size:.48rem}}
+
+.push-guidance{color:#BBC7D3;font-size:.78rem;line-height:1.4;width:100%;margin-bottom:3px}
