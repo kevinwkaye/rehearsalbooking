@@ -9,3 +9,53 @@
 .login-heading{font-size:1.35rem;margin:0 0 18px}.admin-login-link{display:block;margin:24px auto 0;color:#C3CCD6;background:none;border:0;text-decoration:underline;font-size:.85rem}.create-band-panel{background:#29313C;border:1px solid #404B58;border-radius:15px;padding:21px;margin:22px 0 7px}.create-band-panel h3{margin-bottom:5px}.create-band-panel .button.primary{align-self:flex-start;min-width:165px}
 
 .admin-subheading{margin:30px 0 16px}.admin-section>h3:not(.admin-subheading){margin:16px 0}.notice:not(.error):not(.success){margin-top:16px;padding:15px;border:1px solid #4A5562;background:#2B3340;border-radius:12px;color:#CBD4DE;line-height:1.5}
+
+/* The calendar is the entire mobile-first screen. No marketing panels. */
+.app-layout.calendar-mode{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.app-layout.calendar-mode .site-header{flex:none}
+.main-container.calendar-page{flex:1;min-height:0;display:flex;flex-direction:column;max-width:1220px;width:100%;padding:10px 16px 12px}
+.calendar-page .calendar-card{flex:1;min-height:0;display:flex;flex-direction:column;padding:13px 16px 0}
+.calendar-page .calendar-header{align-items:center;margin:0 2px 12px;min-height:42px}
+.calendar-page .calendar-header h2{margin:0;font-size:clamp(1.08rem,2.3vw,1.62rem)}
+.calendar-page .calendar-nav button{min-height:36px;min-width:36px}
+.calendar-page .calendar-grid{flex:1;min-height:0;grid-template-rows:22px;grid-auto-rows:minmax(0,1fr);gap:4px}
+.calendar-page .calendar-day,.calendar-page .blank-day{min-height:0;height:100%;padding:clamp(3px,0.8vh,8px);gap:3px}
+.calendar-page .calendar-foot{flex:none;min-height:0;padding:9px 2px;gap:7px}
+.calendar-page .legend{gap:6px 12px}
+.calendar-page .legend-item{font-size:.68rem}
+.calendar-page .weekday{padding:3px 0;font-size:.65rem}
+.calendar-page .day-band{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font-size:clamp(.54rem,1.1vw,.72rem)}
+.calendar-page .day-time{font-size:clamp(.54rem,1vw,.71rem)}
+.calendar-page .day-number{font-size:clamp(.7rem,1.5vw,.86rem)}
+.calendar-page .calendar-day:focus-visible{outline:2px solid #F6CB8A;outline-offset:-2px}
+.push-settings{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px}
+.push-settings .fineprint{width:100%}
+.band-members{border-top:1px solid #3D4754;margin-top:12px;padding-top:12px}
+.band-members h4{margin:0 0 10px;color:#ADB9C6;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em}
+.band-member{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:11px 0;border-top:1px solid #37414D}
+.band-member:first-of-type{border-top:0}
+.band-member-copy{display:flex;flex:1;min-width:160px;flex-direction:column;gap:3px;overflow-wrap:anywhere}
+.band-member-copy small{font-size:.72rem;color:#9DAFC0}
+.band-member .band-actions{flex-basis:100%;gap:6px;flex-wrap:wrap}
+@media(max-width:740px){
+ .main-container.calendar-page{padding:6px 6px 8px}
+ .calendar-page .calendar-card{padding:8px 7px 0;border-radius:12px}
+ .calendar-page .calendar-header{gap:8px;margin:0 1px 6px;min-height:38px}
+ .calendar-page .calendar-header h2{font-size:1.13rem}
+ .calendar-page .calendar-nav{gap:3px}
+ .calendar-page .calendar-nav button{min-width:33px;min-height:33px;padding:6px}
+ .calendar-page .calendar-grid{gap:2px;grid-template-rows:20px}
+ .calendar-page .calendar-day,.calendar-page .blank-day{border-radius:5px;padding:4px 3px}
+ .calendar-page .calendar-foot{padding:6px 3px}
+ .calendar-page .legend{gap:4px 10px}
+ .calendar-page .legend-item{font-size:.62rem}
+ .calendar-page .day-band{-webkit-line-clamp:2;line-clamp:2;font-size:.55rem}
+ .calendar-page .day-time{font-size:.58rem}
+ .calendar-page .today-underline{height:2px;bottom:3px;right:3px}
+}
+@media(max-height:640px){
+ .calendar-page .calendar-header{margin-bottom:4px}
+ .calendar-page .calendar-foot{padding:4px 2px}
+ .calendar-page .calendar-day,.calendar-page .blank-day{padding:3px}
+ .calendar-page .day-band{font-size:.52rem}
+}

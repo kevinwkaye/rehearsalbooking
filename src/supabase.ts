@@ -6,7 +6,8 @@ export const db=createClient(url||'https://example.supabase.co',key||'missing-ke
 export async function rpc<T>(name:string,args:Record<string,unknown>={}):Promise<T>{
   const {data,error}=await db.rpc(name,args);if(error)throw error;return data as T;
 }
-export function readableError(err:unknown){const text=err instanceof Error?err.message:String(err);
+export function readableError(err:unknown){const rec=err&&typeof err==='object'?err as {message?:unknown;details?:unknown;code?:unknown}:null;
+ const text=err instanceof Error?err.message:typeof rec?.message==='string'?rec.message:String(err);
  if(/bands_name_unique/i.test(text))return 'That band name is already registered.';
  if(/unique|already booked|BOOKED|duplicate key|23505/i.test(text))return 'Sorry, this date has just been booked. Please choose another day.';
  if(/database error saving new user/i.test(text))return 'Could not create your account. Check your details or ask the administrator for help.';

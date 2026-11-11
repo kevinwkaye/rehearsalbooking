@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useState, type FormEvent, type CSSProperties} from 'react';
-import {ArrowRight,Bell,BellRing,CalendarDays,Check,ChevronLeft,ChevronRight,Clock,LogOut,Menu,Music2,Plus,RefreshCw,ShieldCheck,Trash2,X} from 'lucide-react';
+import {ArrowRight,Bell,CalendarDays,Check,ChevronLeft,ChevronRight,Clock,LogOut,Menu,Music2,Plus,RefreshCw,ShieldCheck,Trash2,X} from 'lucide-react';
 import type {Session} from '@supabase/supabase-js';
 import {db,configured,rpc,readableError} from './supabase';
 import {dateKey,monthCells,describeDate,times,todayInLondon} from './domain.mjs';
@@ -99,7 +99,6 @@ function BookingDialog({date,booking,band,allBands,myBandId,admin,onClose,onSave
     <label>Practice date<input type="date" min={todayInLondon()} value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}/></label>
     {canCreate&&admin&&<label>Booking for<select value={bandId} onChange={e=>setBandId(e.target.value)}>{allBands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
     <label>Start time<div className="field-with-icon"><Clock size={18}/><select value={time} onChange={e=>setTime(e.target.value)}>{TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}</select></div></label>
-    <p className="helper"><CalendarDays size={16}/> This reserves the entire day, whatever time you start.</p>
     <button className="button primary full" onClick={save} disabled={busy||!bandId&&admin}>{busy?'Saving…':booking?'Save changes':'Confirm booking'}</button>
     {booking&&!confirmCancel&&<button className="button text-danger" onClick={()=>setConfirmCancel(true)}><Trash2 size={16}/> Cancel this practice</button>}
     {booking&&confirmCancel&&<div className="confirm-box"><strong>Definitely cancel this rehearsal?</strong><p>The day will immediately become available to other bands.</p><div className="button-row"><button className="button subtle" onClick={()=>setConfirmCancel(false)}>Keep booking</button><button className="button danger" disabled={busy} onClick={cancel}>Yes, cancel</button></div></div>}
@@ -108,10 +107,12 @@ function BookingDialog({date,booking,band,allBands,myBandId,admin,onClose,onSave
  </section></div>;
 }
 
-function NotificationPanel({notices,onClose,onRefresh}:{notices:Notice[];onClose:()=>void;onRefresh:()=>void}){
+function NotificationPanel({notices,userId,onClose,onRefresh}:{notices:Notice[];userId:string;onClose:()=>void;onRefresh:()=>void}){
+ const [pushMessage,setPushMessage]=useState('');
  async function mark(id:string){try{await rpc('mark_notice_read',{p_id:id});onRefresh();}catch{/* Keeping the panel usable if offline */}}
  return <div className="overlay-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><aside className="side-panel" aria-label="Notifications">
   <div className="panel-heading"><h2>Notifications</h2><button aria-label="Close" className="icon-button" onClick={onClose}><X/></button></div>
+  <div className="push-settings"><button className="button subtle small" onClick={()=>void enablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Enable phone alerts</button><button className="button subtle small" onClick={()=>void disablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Disable phone alerts</button>{pushMessage&&<p role="status" className="fineprint">{pushMessage}</p>}</div>
   {notices.length===0?<p className="empty">Nothing new. Enjoy the peace and quiet.</p>:notices.map(n=><button key={n.id} onClick={()=>mark(n.id)} className={`notice-item ${n.read_at?'':'unread'}`}><span className="notice-dot"/><span><strong>{n.title}</strong><small>{n.body}</small><em>{new Date(n.created_at).toLocaleString('en-GB')}</em></span></button>)}
  </aside></div>;
 }
@@ -148,6 +149,7 @@ function AdminPanel({profiles,bands,bookings,audits,onRefresh,onMessage}:{profil
  const [passwordTarget,setPasswordTarget]=useState<Profile|null>(null),[newPassword,setNewPassword]=useState('');
  const [busy,setBusy]=useState<string|null>(null),[error,setError]=useState('');
  const members=profiles.filter(p=>p.role==='band');
+ const [deleteTarget,setDeleteTarget]=useState<{kind:'band'|'member';id:string;name:string}|null>(null);
  async function createBand(e:FormEvent){e.preventDefault();setBusy('create');setError('');try{
   await rpc('admin_create_band',{p_name:newBand.name,p_count:newBand.member_count,p_colour:newBand.colour});
   setNewBand({name:'',member_count:4,colour:STUDIO_COLOURS[(bands.length+1)%STUDIO_COLOURS.length]});onMessage('Band created. Members can now choose it during sign-up.');onRefresh();
@@ -163,7 +165,28 @@ function AdminPanel({profiles,bands,bookings,audits,onRefresh,onMessage}:{profil
   if(error||data?.error)throw new Error(data?.error||'Unable to reset password');
   setPasswordTarget(null);setNewPassword('');onMessage('Temporary password set. Send it privately to the member; they will change it at next sign-in.');onRefresh();
  }catch(e){setError(readableError(e));}finally{setBusy(null);}}
- const startEdit=(band:Band)=>{setEdit(band);setEditForm({name:band.name,member_count:band.member_count,colour:band.colour});};
+  const startEdit=(band:Band)=>{setEdit(band);setEditForm({name:band.name,member_count:band.member_count,colour:band.colour});};
+ async function confirmDeletion(){if(!deleteTarget)return;
+  setError('');setBusy('deleting');
+  try{
+   if(deleteTarget.kind==='member'){
+    const {data,error:callError}=await db.functions.invoke('admin-member-access',{body:{action:'delete_member',user_id:deleteTarget.id}});
+    if(callError||data?.error)throw new Error(data?.error||callError?.message||'Unable to delete the member');
+    onMessage('Account deleted. Its bookings remain in the room history.');
+   }else{
+    const result=await rpc<'deleted'|'archived'>('admin_delete_band',{p_band_id:deleteTarget.id});
+    onMessage(result==='archived'?'Band archived. Its previous rehearsal history has been kept.':'Band deleted.');
+   }
+   setDeleteTarget(null);onRefresh();
+  }catch(e){setError(readableError(e));}finally{setBusy(null);}
+ }
+ const memberRow=(p:Profile)=><article className="band-member" key={p.id}><div className="band-member-copy"><strong>{p.contact_name}</strong><small>{p.email}</small></div><span className={`status-tag ${p.status}`}>{p.status}</span><div className="band-actions">
+  {p.status==='pending'&&p.band_id&&<button className="button primary small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'approved')}>Approve</button>}
+  {p.status==='deactivated'||p.status==='rejected'?<button className="button subtle small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'approved')}>Reactivate</button>:<button className="button subtle small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'deactivated')}>Deactivate</button>}
+  <button className="button subtle small" onClick={()=>{setChanging(p);setNewBandId(p.band_id||bands[0]?.id||'');}}>Change band</button>
+  <button className="button subtle small" disabled={busy!==null} onClick={()=>{setPasswordTarget(p);setNewPassword('');}}>Reset password</button>
+  <button className="button small text-danger" disabled={busy!==null} onClick={()=>setDeleteTarget({kind:'member',id:p.id,name:p.contact_name})}><Trash2 size={15}/> Delete account</button>
+ </div></article>;
  return <section className="admin-section">
   <div className="section-heading"><span className="eyebrow">MANAGEMENT</span><h2>Bands and members</h2><p>Create the bands here. Every musician creates their own login and selects one band.</p></div>
   {error&&<div className="notice error" role="alert">{error}</div>}
@@ -174,14 +197,14 @@ function AdminPanel({profiles,bands,bookings,audits,onRefresh,onMessage}:{profil
    <button type="submit" className="button primary" disabled={busy!==null}><Plus size={17}/>{busy==='create'?'Creating…':'Add band'}</button>
   </form>
   <div className="stat-grid"><div><b>{bands.length}</b><span>Bands</span></div><div><b>{members.filter(p=>p.status==='approved').length}</b><span>Active members</span></div><div><b>{bookings.filter(b=>b.status==='confirmed').length}</b><span>Bookings</span></div></div>
-  <h3>Bands</h3><div className="band-list">{bands.length===0?<p className="empty">Create your first band above.</p>:bands.map(b=><article className="band-admin-card" key={b.id}><div className="band-admin-head"><span className="band-dot large" style={{background:b.colour}}/><div><strong>{b.name}</strong><small>{members.filter(p=>p.band_id===b.id).length} registered · {b.member_count} expected</small></div></div><div className="band-actions"><button className="button subtle small" onClick={()=>startEdit(b)}>Edit band</button></div></article>)}</div>
-  <h3 className="admin-subheading">Members</h3><div className="band-list">{members.length===0?<p className="empty">No one has signed up yet.</p>:members.map(p=><article className="band-admin-card" key={p.id}><div className="band-admin-head"><span className="band-dot large" style={{background:bands.find(b=>b.id===p.band_id)?.colour||'#596473'}}/><div><strong>{p.contact_name}</strong><small>{p.email} · {bands.find(b=>b.id===p.band_id)?.name||'Band not selected'}</small></div><span className={`status-tag ${p.status}`}>{p.status}</span></div><div className="band-actions">
-    {p.status==='pending'&&p.band_id&&<button className="button primary small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'approved')}>Approve</button>}
-    {p.status==='deactivated'||p.status==='rejected'?<button className="button subtle small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'approved')}>Reactivate</button>:<button className="button subtle small" disabled={busy!==null} onClick={()=>changeStatus(p.id,'deactivated')}>Deactivate</button>}
-    <button className="button subtle small" onClick={()=>{setChanging(p);setNewBandId(p.band_id||bands[0]?.id||'');}}>Change band</button>
-    <button className="button subtle small" disabled={busy!==null} onClick={()=>{setPasswordTarget(p);setNewPassword('');}}>Reset password</button>
-   </div></article>)}</div>
+   <h3>Bands and their members</h3><div className="band-list">{bands.length===0?<p className="empty">Create your first band above.</p>:bands.map(b=>{const linked=profiles.filter(p=>p.band_id===b.id);return <article className="band-admin-card" key={b.id}>
+    <div className="band-admin-head"><span className="band-dot large" style={{background:b.colour}}/><div><strong>{b.name}</strong><small>{linked.length} account{linked.length===1?'':'s'} · {b.member_count} expected</small></div></div>
+    <div className="band-actions"><button className="button subtle small" onClick={()=>startEdit(b)}>Edit band</button><button className="button small text-danger" onClick={()=>setDeleteTarget({kind:'band',id:b.id,name:b.name})}><Trash2 size={15}/> Delete band</button></div>
+    <div className="band-members"><h4>Associated accounts</h4>{linked.length===0?<p className="empty">No accounts assigned yet.</p>:linked.map(p=>p.role==='admin'?<div className="band-member" key={p.id}><div className="band-member-copy"><strong>{p.contact_name} · Admin</strong><small>{p.email}</small></div><div className="band-actions"><button className="button subtle small" onClick={()=>{setChanging(p);setNewBandId(p.band_id||b.id);}}>Change band</button></div></div>:memberRow(p))}</div>
+   </article>;})}</div>
+   {members.some(p=>!p.band_id)&&<><h3 className="admin-subheading">Not assigned to a band</h3><div className="band-list">{members.filter(p=>!p.band_id).map(memberRow)}</div></>}
   <div className="audit-section"><h3>Recent activity</h3>{audits.length===0?<p className="empty">No activity yet.</p>:<div className="audit-list">{audits.slice(0,12).map(a=><div className="audit-line" key={a.id}><strong>{a.action.replaceAll('.',' · ')}</strong><span>{new Date(a.created_at).toLocaleString('en-GB')}</span></div>)}</div>}</div>
+   {deleteTarget&&<div className="modal-backdrop"><section className="modal form-stack" role="dialog" aria-modal="true" aria-label="Confirm deletion"><div className="modal-header"><span className="eyebrow">PLEASE CONFIRM</span><button type="button" className="icon-button" aria-label="Close" onClick={()=>setDeleteTarget(null)}><X/></button></div><h2>Delete {deleteTarget.name}?</h2><p className="subdued">{deleteTarget.kind==='member'?'This permanently removes the login. Their past bookings stay in the rehearsal history.':'Members will need to choose a new band. If this band has confirmed bookings, cancel them first. Past booking history will be preserved.'}</p><div className="button-row"><button className="button subtle" onClick={()=>setDeleteTarget(null)}>Keep it</button><button className="button danger" disabled={busy!==null} onClick={()=>void confirmDeletion()}>{busy==='deleting'?'Deleting…':'Yes, delete'}</button></div></section></div>}
   {edit&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={saveBand} aria-modal="true" role="dialog" aria-label="Edit band"><div className="modal-header"><span className="eyebrow">EDIT BAND</span><button type="button" className="icon-button" onClick={()=>setEdit(null)} aria-label="Close"><X/></button></div><h2>{edit.name}</h2><label>Band name<input required minLength={2} maxLength={80} value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></label><label>Expected members<input type="number" min="1" max="50" required value={editForm.member_count} onChange={e=>setEditForm({...editForm,member_count:Number(e.target.value)})}/></label><label>Colour<div className="colour-options">{STUDIO_COLOURS.map(c=><button type="button" key={c} className={`colour-chip ${editForm.colour===c?'active':''}`} aria-label={`Choose colour ${c}`} style={{background:c}} onClick={()=>setEditForm({...editForm,colour:c})}>{editForm.colour===c&&<Check size={18} color={hexIsLight(c)?'#17202B':'#FFFFFF'}/>}</button>)}</div></label><button className="button primary" disabled={busy!==null}>Save band</button></form></div>}
   {changing&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={saveMemberBand} role="dialog" aria-modal="true" aria-label="Change member band"><div className="modal-header"><span className="eyebrow">MEMBER BAND</span><button type="button" className="icon-button" onClick={()=>setChanging(null)} aria-label="Close"><X/></button></div><h2>Move {changing.contact_name}</h2><p className="subdued">This can only be done by the administrator.</p><label>New band<select required value={newBandId} onChange={e=>setNewBandId(e.target.value)}>{bands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label><button className="button primary" disabled={busy!==null||!newBandId}>Change band</button></form></div>}
   {passwordTarget&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={resetPassword} role="dialog" aria-modal="true" aria-label="Reset member password"><div className="modal-header"><span className="eyebrow">PASSWORD</span><button type="button" className="icon-button" onClick={()=>setPasswordTarget(null)} aria-label="Close"><X/></button></div><h2>Reset password</h2><p className="subdued">Set a temporary password for {passwordTarget.contact_name}. Share it privately. They must change it on login.</p><label>Temporary password<input required minLength={10} type="password" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)}/></label><button className="button primary" disabled={busy!==null}>Save temporary password</button></form></div>}
@@ -204,7 +227,7 @@ export default function App(){
    try{
     const {data:user,error:ue}=await db.from('profiles').select('*').eq('id',active.user.id).single();if(ue)throw ue;setProfile(user as Profile);
     if(user.status!=='approved'){setBands([]);setProfiles([]);setBookings([]);setNotices([]);setAudits([]);return;}
-    const [br,bb,nn]=await Promise.all([db.from('bands').select('*').order('name'),db.from('bookings').select('*').order('practice_date'),db.from('notifications').select('*').order('created_at',{ascending:false}).limit(70)]);
+    const [br,bb,nn]=await Promise.all([db.from('bands').select('*').is('archived_at',null).order('name'),db.from('bookings').select('*').order('practice_date'),db.from('notifications').select('*').order('created_at',{ascending:false}).limit(70)]);
     if(br.error||bb.error||nn.error)throw br.error||bb.error||nn.error;
     setBands((br.data||[]) as Band[]);setBookings((bb.data||[]) as Booking[]);setNotices((nn.data||[]) as Notice[]);
     if(user.role==='admin'){const [all,history]=await Promise.all([db.from('profiles').select('*').order('created_at',{ascending:false}),db.from('audit_events').select('*').order('created_at',{ascending:false}).limit(30)]);if(all.error||history.error)throw all.error||history.error;setProfiles((all.data||[]) as Profile[]);setAudits((history.data||[]) as Audit[]);}
@@ -231,9 +254,10 @@ export default function App(){
  const currentMonthBookings=useMemo(()=>new Map(bookings.filter(b=>b.status==='confirmed').map(b=>[b.practice_date,b])),[bookings]);
  const selectedBooking=chosen?currentMonthBookings.get(chosen)||null:null;
  const selectedBand=selectedBooking?bands.find(b=>b.id===selectedBooking.band_id)||null:null;
- const myBand=profile?.band_id?bands.find(b=>b.id===profile.band_id):null;
  const approved=profile?.status==='approved',admin=profile?.role==='admin';
- function monthBy(delta:number){const date=new Date(Date.UTC(month.year,month.month+delta,1));setMonth({year:date.getUTCFullYear(),month:date.getUTCMonth()});}
+ function monthBy(delta:number){const date=new Date(Date.UTC(month.year,month.month+delta,1));const today=todayInLondon().slice(0,7);const target=`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`;if(target<today)return;setMonth({year:date.getUTCFullYear(),month:date.getUTCMonth()});}
+ const viewingCurrentMonth=`${month.year}-${String(month.month+1).padStart(2,'0')}`<=currentDate.slice(0,7);
+ useEffect(()=>{const current=todayInLondon().slice(0,7);const displayed=`${month.year}-${String(month.month+1).padStart(2,'0')}`;if(displayed<current){const [y,m]=current.split('-').map(Number);setMonth({year:y,month:m-1});}},[month.year,month.month,currentDate]);
  async function doLogout(){try{if('serviceWorker' in navigator){const registration=await navigator.serviceWorker.ready;const sub=await registration.pushManager?.getSubscription();if(sub){await db.from('push_subscriptions').delete().eq('endpoint',sub.endpoint);await sub.unsubscribe();}}}catch{/* Still allow logout if push cleanup is unavailable */}await db.auth.signOut();setMessage('');setSession(null);setProfile(null);}
  function saved(){setChosen(null);setMessage('Calendar updated. Sorted!');void refresh();}
  if(!configured)return <div className="config-screen"><Logo/><h2>Almost ready to rock.</h2><p>The app needs its Supabase project configured before it can accept logins and bookings.</p><p>Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> as described in <code>DEPLOYMENT.md</code>.</p></div>;
@@ -242,7 +266,7 @@ export default function App(){
  if(profile.role==='band'&&!profile.band_id&&profile.status==='pending')return <ChooseBandScreen onDone={()=>void refresh()} onLogout={()=>void doLogout()}/>;
  if(profile.must_change_password)return <ChangePasswordScreen onDone={()=>void refresh()} onLogout={()=>void doLogout()}/>;
  if(!approved)return <main className="auth-shell"><section className="auth-card"><Logo/><div className="pending-icon"><Clock size={32}/></div><h1>{profile.status==='pending'?'Waiting for approval':profile.status==='rejected'?'Registration declined':'Account deactivated'}</h1><p className="auth-lead">{profile.status==='pending'?'Your band has been selected. The administrator will approve your account shortly.':`Contact ${SUPPORT} if you think this is a mistake.`}</p><div className="button-row"><button className="button subtle" onClick={()=>void refresh()}><RefreshCw size={16}/> Check again</button><button className="button subtle" onClick={doLogout}><LogOut size={16}/> Log out</button></div></section></main>;
- return <div className="app-layout">
+  return <div className={`app-layout ${panel==='calendar'?'calendar-mode':''}`}>
    <header className="site-header"><div className="header-inner"><Logo small/>
     <nav className="desktop-nav"><button className={panel==='calendar'?'active':''} onClick={()=>setPanel('calendar')}><CalendarDays size={17}/> Calendar</button>{admin&&<button className={panel==='admin'?'active':''} onClick={()=>setPanel('admin')}><ShieldCheck size={17}/> Admin</button>}</nav>
     <div className="header-actions"><button className="icon-button" aria-label="Refresh calendar" title="Refresh" onClick={()=>void refresh()}><RefreshCw size={19} className={fetching?'spin':''}/></button>
@@ -251,26 +275,22 @@ export default function App(){
      <button className="button logout desktop-logout" onClick={doLogout}><LogOut size={16}/> Log out</button>
     </div></div></header>
    {showMenu&&<div className="mobile-menu"><button onClick={()=>{setPanel('calendar');setShowMenu(false);}}>Calendar</button>{admin&&<button onClick={()=>{setPanel('admin');setShowMenu(false);}}>Admin</button>}<button onClick={doLogout}>Log out</button></div>}
-   <main className="main-container">
-    <div className="top-intro"><div><span className="eyebrow">YOUR REHEARSAL SPACE</span><h1>{admin?'Welcome, boss.':`Alright, ${profile.contact_name}.`}</h1><p>{admin?'Keep the room running smoothly, without the drama.':'Find a free day, pick your time and get practising.'}</p></div><div className="identity-chip"><span className="identity-dot" style={{background:myBand?.colour||'#EAA56F'}}/>{admin?'Administrator':myBand?.name}</div></div>
+   <main className={`main-container ${panel==='calendar'?'calendar-page':''}`}>
     {!online&&<div className="notice error" role="status">You are offline. Bookings are disabled until you reconnect.</div>}
     {error&&<div className="notice error" role="alert">{error}<button className="mini-close" onClick={()=>setError('')} aria-label="Dismiss"><X size={16}/></button></div>}
     {message&&<div className="notice success" role="status">{message}<button className="mini-close" onClick={()=>setMessage('')} aria-label="Dismiss"><X size={16}/></button></div>}
     {panel==='admin'&&admin?<AdminPanel profiles={profiles} bands={bands} bookings={bookings} audits={audits} onRefresh={()=>void refresh()} onMessage={setMessage}/>:<>
-     <section className="calendar-card"><div className="calendar-header"><div><span className="eyebrow">THE ROOM AT A GLANCE</span><h2>{getMonthTitle(month.year,month.month)}</h2></div><div className="calendar-nav"><button aria-label="Previous month" onClick={()=>monthBy(-1)}><ChevronLeft size={21}/></button><button className="today-button" onClick={()=>{const d=currentDate.split('-').map(Number);setMonth({year:d[0],month:d[1]-1});}}>Today</button><button aria-label="Next month" onClick={()=>monthBy(1)}><ChevronRight size={21}/></button></div></div>
+     <section className="calendar-card"><div className="calendar-header"><h2>{getMonthTitle(month.year,month.month)}</h2><div className="calendar-nav"><button aria-label="Previous month" title={viewingCurrentMonth?'Earlier months are unavailable':'Previous month'} disabled={viewingCurrentMonth} onClick={()=>monthBy(-1)}><ChevronLeft size={21}/></button><button className="today-button" onClick={()=>{const d=currentDate.split('-').map(Number);setMonth({year:d[0],month:d[1]-1});}}>Today</button><button aria-label="Next month" onClick={()=>monthBy(1)}><ChevronRight size={21}/></button></div></div>
      <div className="calendar-grid">{WEEKDAYS.map((w,i)=><div className="weekday" key={`${w}${i}`}>{w}</div>)}
        {monthDays.map((d,i)=>{if(d===null)return <div className="blank-day" key={`blank${i}`}/>;const key=dateKey(month.year,month.month,d);const b=currentMonthBookings.get(key);const band=b?bands.find(x=>x.id===b.band_id):undefined;const past=key<currentDate;const isToday=key===currentDate;
          return <button type="button" key={key} className={`calendar-day ${b?'booked':''} ${past&&!b?'past':''} ${isToday?'today':''}`} style={b?{'--band-colour':band?.colour||'#74B8A7',color:hexIsLight(band?.colour||'#74B8A7')?'#17202B':'#FFFFFF'} as CSSProperties:undefined} onClick={()=>setChosen(key)} disabled={past&&!b} aria-label={`${describeDate(key)}: ${b?`${band?.name||'Booked'} at ${b.start_time.slice(0,5)}`:past?'Past date':'Available'}`}>
          <span className="day-number">{d}</span>{b?<span className="day-booked"><span className="day-band">{band?.name||'Booked'}</span><span className="day-time">{b.start_time.slice(0,5)}</span></span>:!past&&<span className="day-add"><Plus size={15}/></span>}{isToday&&<span className="today-underline"/>}</button>;
        })}</div>
-     <div className="calendar-foot"><div className="legend">{bands.map(b=><span className="legend-item" key={b.id}><span className="band-dot" style={{background:b.colour}}/>{b.name}</span>)}</div><small>Tap a day to see details or book.</small></div>
+     <div className="calendar-foot"><div className="legend">{bands.map(b=><span className="legend-item" key={b.id}><span className="band-dot" style={{background:b.colour}}/>{b.name}</span>)}</div></div>
      </section>
-     <section className="bottom-cards"><div className="info-card"><div className="card-icon amber"><CalendarDays size={23}/></div><h3>Keep it simple</h3><p>Pick a free day, choose your start time and confirm. The room is yours for the whole day.</p></div>
-      <div className="info-card"><div className="card-icon mint"><BellRing size={23}/></div><h3>Stay in the loop</h3><p>Get alerts whenever another band books, moves or cancels a practice.</p><button className="subtle-link" onClick={()=>enablePush(profile.id).then(setMessage).catch(e=>setError(readableError(e)))}>Enable notifications <ArrowRight size={15}/></button><button className="subtle-link" style={{marginLeft:18}} onClick={()=>disablePush(profile.id).then(setMessage).catch(e=>setError(readableError(e)))}>Disable on this device</button></div></section>
     </>}
-    <footer className="site-footer"><span>© The Bunkface Booking Boutique</span><a href={`mailto:${SUPPORT}`}>Need a hand?</a></footer>
-   </main>
+    </main>
    {chosen&&<BookingDialog key={chosen+String(selectedBooking?.id)} date={chosen} booking={selectedBooking} band={selectedBand} allBands={bands} myBandId={profile.band_id} admin={admin} onClose={()=>setChosen(null)} onSaved={saved}/>}
-   {showNotifications&&<NotificationPanel notices={notices} onClose={()=>setShowNotifications(false)} onRefresh={()=>void refresh()}/>}
+   {showNotifications&&<NotificationPanel notices={notices} userId={profile.id} onClose={()=>setShowNotifications(false)} onRefresh={()=>void refresh()}/>}
  </div>;
 }
