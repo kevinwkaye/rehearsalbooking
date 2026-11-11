@@ -254,7 +254,6 @@ export default function App(){
  const currentMonthBookings=useMemo(()=>new Map(bookings.filter(b=>b.status==='confirmed').map(b=>[b.practice_date,b])),[bookings]);
  const selectedBooking=chosen?currentMonthBookings.get(chosen)||null:null;
  const selectedBand=selectedBooking?bands.find(b=>b.id===selectedBooking.band_id)||null:null;
- const myBand=profile?.band_id?bands.find(b=>b.id===profile.band_id):null;
  const approved=profile?.status==='approved',admin=profile?.role==='admin';
  function monthBy(delta:number){const date=new Date(Date.UTC(month.year,month.month+delta,1));const today=todayInLondon().slice(0,7);const target=`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`;if(target<today)return;setMonth({year:date.getUTCFullYear(),month:date.getUTCMonth()});}
  const viewingCurrentMonth=`${month.year}-${String(month.month+1).padStart(2,'0')}`<=currentDate.slice(0,7);
