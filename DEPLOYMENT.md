@@ -69,7 +69,7 @@ In-app notifications work without push configuration. For push:
 5. In Supabase **Database Webhooks**, create a webhook on **public.notifications**, event **INSERT**, pointing to the `push-dispatch` Edge Function. Add HTTP header `x-bunkface-secret` with exactly the same value as the Edge Function secret. Use POST, content type JSON. Ensure the Edge Function is configured with `verify_jwt=false` (the handler validates the secret).
 6. Enable notifications on a real iPhone or Android device, create a booking from another account, and verify delivery. iOS requires the web app to be added to the Home Screen before enabling notifications.
 
-The dispatcher uses `@block65/webcrypto-web-push` (Web Crypto API, RFC 8291 encryption) and re-reads the trusted notification record before sending it to every subscribed device on the account. Failed push delivery does not affect confirmed bookings. The Web Push integration is supplied but **cannot be treated as tested on real devices without live credentials**.
+The dispatcher re-reads the trusted notification record and sends it to all subscriptions belonging to the account. Failed push delivery does not affect confirmed bookings. The Web Push integration is supplied but **cannot be treated as tested on real devices without live credentials**.
 
 ## 6. QA before handing to client
 

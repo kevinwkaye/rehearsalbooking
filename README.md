@@ -38,7 +38,7 @@ The free Supabase tier can pause after low activity. Cloudflare Pages does not r
 
 ## Project files
 
-- `src/App.tsx`: calendar, booking modal, authentication, admin, audit activity and notifications
+- `src/App.tsx`: calendar, booking modal, authentication, admin and notifications
 - `src/styles.css`: dark responsive interface
 - `supabase/migrations/`: schema, RLS and atomic booking functions
 - `supabase/functions/admin-recovery/`: trusted manual recovery-link generation

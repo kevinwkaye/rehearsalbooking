@@ -12,6 +12,6 @@ export function readableError(err:unknown){const text=err instanceof Error?err.m
  if(/database error saving new user/i.test(text))return 'Could not register this band. The band name may already be taken. Please check with the administrator.';
  if(/not authorised|not authorized|forbidden|PERMISSION/i.test(text))return 'You do not have permission to do that.';
  if(/past date/i.test(text))return 'Please choose today or a future date.';
- if(/invalid login credentials/i.test(text))return 'That email or password is incorrect.';
+ if(/invalid login credentials/i.test(text))return 'Incorrect password. Ask the administrator for help.';
  return text||'Something went wrong. Please try again.';
 }

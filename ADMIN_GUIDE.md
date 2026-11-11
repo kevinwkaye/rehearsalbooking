@@ -18,7 +18,7 @@ Select **Edit band** to change the displayed name, contact name, member count an
 
 A confirmed booking reserves the **entire day**. A start time is displayed for convenience, but another band cannot book that day even at a different time. The database enforces one confirmed booking per date. For a requested clash, speak to the bands outside the app, then reschedule or cancel the existing booking before assigning the date to another band.
 
-You can open any booking from the calendar and edit or cancel it. All changes appear to the other bands and are recorded in the audit history. Recent actions appear at the bottom of the administrator page.
+You can open any booking from the calendar and edit or cancel it. All changes appear to the other bands and are recorded in the audit database.
 
 ## Account access and recovery
 
