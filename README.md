@@ -58,3 +58,6 @@ The Admin screen lists the accounts belonging to each band and can remove an ind
 Administrator accounts may also be affiliated with a band. Adam's assigned band is 88 Bunkface, and the admin booking picker defaults to that band while retaining full admin authority.
 
 **Phone push alerts are not yet active by default.** The in-app notification centre contains the phone-alert controls. Read [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md) for the remaining VAPID configuration, webhook and device testing.
+
+## Phone notifications
+Push delivery relies on a public VAPID key (committed in source) and two server-only secrets. The app creates in-app alerts for every proposal/confirmation regardless of push permission. See [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md) to finish the Edge Function secrets and device setup.
