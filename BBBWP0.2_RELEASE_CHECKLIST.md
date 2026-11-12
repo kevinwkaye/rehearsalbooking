@@ -1,6 +1,6 @@
 # BBBWP0.2 | 88 Bunkspace | Release checklist
 
-**Status:** Draft implementation, NOT deployed. Gmail SMTP and device tests outstanding.
+**Status:** Draft implementation, NOT deployed. User reports Gmail SMTP saved; delivery and device tests outstanding. New Pages project creation is required for the requested address change.
 
 ## Scope
 
@@ -26,10 +26,11 @@
 - [x] Confirmed that pending signups do not invalidate current votes and approval does invalidate affected pending votes (rollback-only).
 - [x] Functional rollback and re-enable SQL passed in the same rolled-back transaction.
 - [x] GitHub Actions TypeScript/build tests passed after migration refinements.
-- [ ] Configure Gmail SMTP in Supabase (user to create account and app password privately).
-- [ ] Test real password recovery delivery, expiry and app redirect.
+- [x] User reports Gmail SMTP configured privately in Supabase (not yet independently verified).
+- [ ] Test real password recovery delivery, expiry and redirects after new Pages project has been created.
 - [ ] Test Android notification taps from foreground/background/closed app, and iPhone regression.
 - [ ] Manually verify typography and calendar at 390px.
+- [ ] Create parallel new Pages project for 88-bunkspace from the same GitHub repository and check environment variables and HTTPS (see `BBBWP0.2_DOMAIN_MIGRATION.md`).
 - [ ] Save prior GitHub commit, Cloudflare deployment ID, migration versions and backup/export.
 - [ ] Merge only when complete, apply migration in compatible order, deploy Edge Function then confirm Cloudflare.
 - [ ] Post-release smoke test and rollback readiness review.
@@ -43,3 +44,7 @@
 ## Licensing and release caution
 
 GitHub repository `kevinwkaye/rehearsalbooking` is currently **public**. The client's supplied LEMONMILK font files have been included in this draft branch as self-hosted assets. Personal/non-commercial use is allowed by the supplied readme, but it does not explicitly grant public redistribution rights. Before merge/go-live, confirm whether the public repository may redistribute those binary assets or make appropriate licensed/private-hosting arrangements. No font file is included as a separate end-user download.
+
+## Address migration
+
+See [`BBBWP0.2_DOMAIN_MIGRATION.md`](BBBWP0.2_DOMAIN_MIGRATION.md). Cloudflare confirms an existing `*.pages.dev` subdomain cannot be changed in place. The old project MUST remain accessible while users transition. Both Pages projects may be built from `main`; do not change Supabase's primary Site URL until new site and authentication redirects are checked.
