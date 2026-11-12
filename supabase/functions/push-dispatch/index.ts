@@ -28,7 +28,7 @@ Deno.serve(async request=>{
   const vapid={subject:config.contact||'mailto:bunkface_booking_boutique@proton.me',publicKey:config.public_key,privateKey:config.private_key};
   const {data:subscriptions,error:subError}=await supabase.from('push_subscriptions').select('id,subscription').eq('user_id',n.recipient_user_id);
   if(subError)throw subError;
-  const body=JSON.stringify({title:n.title,body:n.body,tag:n.id});
+  const body=JSON.stringify({title:n.title,body:n.body,tag:n.id,url:n.title==='Account awaiting approval'?'/?admin=approvals':'/?notifications=1'});
   let failures=0;
   for(const sub of subscriptions||[]){
     try{

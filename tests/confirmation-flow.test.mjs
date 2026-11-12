@@ -60,5 +60,5 @@ test('registration gaps do not block practice and count changes do not invalidat
 });
 test('single approved member sees immediate booking success',()=>{
  assert.match(migration,/IF v_active=1 THEN/);
- assert.match(app,/created\?\.status==='confirmed'\?'Practice booked!'/);
+ assert.match(app,/created\?\.status==='confirmed'\?'Practice booked\.'/);
 });
