@@ -109,3 +109,13 @@ h1,h2,h3,h4,strong,b,.logo strong,.stat-grid b{font-family:'LEMONMILK',Arial,san
 .band-admin-card.has-pending{border-color:#E8BD6D}.band-admin-card.has-pending .band-admin-head small{color:#F6CA82}
 
 .calendar-grid{touch-action:pan-y}
+
+/* BBBWP0.3: supplied 88 Bunkspace artwork replaces the old header lockup. */
+.logo.logo-art{gap:0;line-height:normal;flex:none;min-width:0}
+.logo-art img{display:block;width:min(100%,270px);height:auto;object-fit:contain}
+.site-header .logo-art img{width:190px}
+@media(max-width:740px){
+ .site-header .logo-art img{width:clamp(125px,35vw,155px)}
+ .site-header .header-inner{padding-top:8px;padding-bottom:8px}
+}
+@media(max-width:390px){.site-header .logo-art img{width:122px}}

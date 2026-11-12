@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState, type FormEvent, type CSSProperties} from 'react';
-import {ArrowRight,Bell,CalendarDays,Check,ChevronLeft,ChevronRight,Clock,LogOut,Menu,Music2,Plus,RefreshCw,ShieldCheck,Trash2,X} from 'lucide-react';
+import {ArrowRight,Bell,CalendarDays,Check,ChevronLeft,ChevronRight,Clock,LogOut,Menu,Plus,RefreshCw,ShieldCheck,Trash2,X} from 'lucide-react';
 import type {Session} from '@supabase/supabase-js';
 import {db,configured,rpc,readableError} from './supabase';
 import {dateKey,monthCells,describeDate,times,todayInLondon} from './domain.mjs';
@@ -13,7 +13,7 @@ const STUDIO_COLOURS=['#A30000','#D84797','#FF7700','#00AFB5','#7DDF64'];
 function hexIsLight(hex:string){return hex.toUpperCase()!=='#A30000';}
 const getMonthTitle=(year:number,month:number)=>new Intl.DateTimeFormat('en-GB',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(year,month,1)));
 
-function Logo({small=false}:{small?:boolean}){return <div className="logo"><span className="logo-mark"><Music2 size={small?21:27} strokeWidth={2.5}/></span><span><strong>88 Bunkspace</strong><span className="logo-subtitle">Rehearsal room</span></span></div>;}
+function Logo({small=false}:{small?:boolean}){return <div className={'logo logo-art'+(small?' logo-art-small':'')}><img src="/88-bunkspace-logo.webp" alt="88 Bunkspace" width={624} height={310} decoding="async"/></div>;}
 function StatusMessage({error,success}:{error:string;success:string}){return <>{error&&<div role="alert" className="notice error">{error}</div>}{success&&<div role="status" className="notice success">{success}</div>}</>;}
 
 type SignupBand={id:string;name:string;colour:string};
