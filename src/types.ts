@@ -8,3 +8,4 @@ export type Audit={id:string;actor_id:string|null;action:string;details:Record<s
 export type PracticeStatus='pending'|'confirmed'|'declined'|'clashed'|'invalidated';
 export type PracticeRequest={id:string;band_id:string;practice_date:string;start_time:string;proposed_by:string|null;expected_confirmations:number;status:PracticeStatus;booking_id:string|null;created_at:string;resolved_at:string|null};
 export type PracticeConfirmation={request_id:string;user_id:string;member_name:string;decision:'awaiting'|'confirmed'|'declined';responded_at:string|null};
+export type BandMembership={user_id:string;band_id:string;created_at:string};
