@@ -1,38 +1,69 @@
 # The Bunkface Booking Boutique
 
-Mobile-first rehearsal room booking for bands sharing one space. Live site: https://bunkface-booking-boutique.pages.dev/
+A deliberately simple, mobile-first rehearsal room booking app. One administrator creates accounts; each band picks its name from a list, enters its admin-issued password and books a full day.
 
-## Current account model
+## Everyday workflow
 
-Each musician registers with **their own name, email and password**. On first login they choose an administrator-created band; the selection is locked unless the administrator changes it. An administrator must approve accounts before they can book. Adam is the sole administrator and is also assigned to 88 Bunkface.
-
-## BBBWP0.1 (pre-release)
-
-- A registered, approved band member chooses a date and start time and requests a rehearsal.
-- The proposer is automatically recorded as **confirmed**.
-- A **single approved member** in a band confirms immediately. With **two or more approved members**, every other currently approved member must confirm; a decline closes the request.
-- The band's expected member count is informational only and does not prevent requests. Membership changes invalidate pending requests so the roster can be recaptured.
-- Pending requests don't block dates; only confirmed rehearsals reserve the whole day. Database uniqueness prevents overlapping confirmed bookings.
-- The shared calendar starts at the current month and fits the viewport. Admin can manage bands, account approval/reassignment/deletion and existing bookings.
-- Members see in-app notifications; optional phone push requires server-side configuration and device permission.
-
-**Do not deploy the BBBWP0.1 frontend until the database migrations are ready.** See [BBBWP0.1_RELEASE_CHECKLIST.md](BBBWP0.1_RELEASE_CHECKLIST.md) and [DEPLOYMENT.md](DEPLOYMENT.md). This work package is on a draft pull request, not live yet.
+1. An administrator creates a band name, member count, colour and password from **Admin → Create a band account**.
+2. The administrator privately gives the band its name and password.
+3. A band visits the site, chooses its name from the drop-down and enters its password. No email or registration is required.
+4. The band taps an available date, chooses a rehearsal start time and confirms. The **entire day** is reserved instantly and other bands cannot book it.
+5. Bands may edit or cancel only their own bookings. Everyone can see confirmed bookings.
+6. Admin can change band names, colours and passwords, deactivate accounts and edit bookings.
 
 ## Development
 
-Requires Node.js 20 or later.
+Requires Node.js 20+.
 
-```sh
+```bash
 npm install
 cp .env.example .env
-# Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (publishable key only)
+# Enter your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+npm run dev
 npm test
 npm run build
-npm run dev
 ```
 
-Stack: React / TypeScript / Vite, Supabase Auth and PostgreSQL, Cloudflare Pages, optional Web Push. No custom domain or paid email plan is required for this MVP. Email addresses are not verified without SMTP, so the administrator must verify members before approval and handle password resets privately.
+The app will show a configuration screen until Supabase is connected. See [DEPLOYMENT.md](DEPLOYMENT.md) for the migration, Edge Functions and first-admin steps.
 
-Never commit secrets. The public VAPID key can be in source, but the **VAPID private key and push webhook secret must remain private**.
+## Architecture
 
-See [ADMIN_GUIDE.md](ADMIN_GUIDE.md), [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md) and [TESTING.md](TESTING.md).
+- React + Vite + TypeScript, served statically by Cloudflare Pages.
+- Supabase email/password Auth behind the scenes: each band uses an **internal synthetic login email** derived from its band UUID. Bands never see or supply an email address.
+- Admin uses a separate admin email and password.
+- Admin-only Supabase Edge Function provisions band accounts and changes their passwords. Passwords are handled by Supabase Auth and are never stored in application tables or embedded in the frontend.
+- PostgreSQL RLS and SECURITY DEFINER functions enforce permissions and prevent double bookings.
+- Push notifications are optional, with an in-app notification fallback. iPhone push needs the installed home-screen PWA.
+- No custom domain, SMTP, IMAP or Proton Mail integration is needed. Help contact: bunkface_booking_boutique@proton.me.
+
+## Security notes
+
+- **Disable public signups** in Supabase Authentication settings. The second migration also rejects untrusted new Auth registrations.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` in Vite or Cloudflare's public build variables.
+- Only one administrator may exist. Run `npm run bootstrap:admin` once, following DEPLOYMENT.md.
+- Band accounts are shared accounts, not individual member identities. Anyone with a band's password can act as that band.
+- Password changes may not immediately sign out every already-authenticated device. Deactivate an account to block booking access immediately when necessary.
+- The public RPC returns only active band names, IDs and colours. It does not expose passwords or actual email addresses.
+
+## Tests
+
+`npm test` validates calendar calculations and source-level authentication/registration invariants. **Live Supabase integration and browser testing must also be completed before production use.** See TESTING.md.
+
+## Calendar and administrator tools (November update)
+
+The calendar is now the first full-screen view; no introduction or marketing panels. Navigation cannot go earlier than the current Europe/London month; past dates within the current month remain visible but cannot be booked. Users still choose a start time and each date can only have one confirmed rehearsal.
+
+The Admin screen lists the accounts belonging to each band and can remove an individual member's login or delete a band. Band deletion never silently removes confirmed rehearsals: cancel them first. Bands with historical bookings are archived, while bands without booking history are deleted. Associated member logins are left pending/unassigned so they can join another band; the sole administrator is not deleted.
+
+Administrator accounts may also be affiliated with a band. Adam's assigned band is 88 Bunkface, and the admin booking picker defaults to that band while retaining full admin authority.
+
+**Phone push alerts are not yet active by default.** The in-app notification centre contains the phone-alert controls. Read [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md) for the remaining VAPID configuration, webhook and device testing.
+
+## Phone notifications
+Push delivery relies on a public VAPID key (committed in source) and two server-only secrets. The app creates in-app alerts for every proposal/confirmation regardless of push permission. See [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md) to finish the Edge Function secrets and device setup.
+
+## BBBWP0.2 (draft, NOT deployed)
+
+The next work package renames the application **88 Bunkspace** while leaving the band **88 Bunkface** unchanged. It introduces administrator-managed multi-band memberships, checkbox signup, pending approval alerts, notification read-on-open, Android push navigation fixes, calendar swipe navigation, self-service password recovery via Supabase Auth, the client's five-colour band palette and self-hosted LEMONMILK fonts (private/non-commercial use).
+
+Password recovery requires the dedicated Gmail SMTP account to be configured privately in Supabase and tested. Production is not updated until the work package has passed its acceptance criteria. See [BBBWP0.2_RELEASE_CHECKLIST.md](BBBWP0.2_RELEASE_CHECKLIST.md) and the `ops/` rollback scripts.

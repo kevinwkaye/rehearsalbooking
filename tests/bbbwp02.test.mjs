@@ -57,3 +57,8 @@ test('rollback preserves memberships, accounts, bookings and legacy signup',()=>
  assert.match(read('ops/BBBWP0.2_rollback.sql'),/ALTER TABLE public\.bands DROP CONSTRAINT/);
  assert.doesNotMatch(read('ops/BBBWP0.2_rollback.sql'),/DROP TABLE|TRUNCATE|DELETE FROM/);
 });
+
+test('pending signups do not invalidate a live booking proposal until approved',()=>{
+ assert.match(sql,/IF EXISTS\(SELECT 1 FROM public\.profiles WHERE id=NEW\.user_id AND status='approved'\)/);
+ assert.match(sql,/AFTER UPDATE OF status,role OR DELETE ON public\.profiles/);
+});

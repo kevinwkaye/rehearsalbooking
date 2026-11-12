@@ -107,3 +107,5 @@ h1,h2,h3,h4,strong,b,.logo strong,.stat-grid b{font-family:'LEMONMILK',Arial,san
 .calendar-day.booked{background:var(--band-colour);opacity:1}
 
 .band-admin-card.has-pending{border-color:#E8BD6D}.band-admin-card.has-pending .band-admin-head small{color:#F6CA82}
+
+.calendar-grid{touch-action:pan-y}

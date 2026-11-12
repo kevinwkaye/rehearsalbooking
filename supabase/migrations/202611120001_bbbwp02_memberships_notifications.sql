@@ -204,8 +204,15 @@ REVOKE ALL ON FUNCTION bunkface_private.invalidate_band_requests(uuid) FROM PUBL
 CREATE FUNCTION bunkface_private.band_memberships_changed()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 BEGIN
- IF TG_OP='DELETE' THEN PERFORM bunkface_private.invalidate_band_requests(OLD.band_id);
- ELSE PERFORM bunkface_private.invalidate_band_requests(NEW.band_id); END IF;
+ IF TG_OP='DELETE' THEN
+   -- The profile may already have been cascade-deleted.
+   PERFORM bunkface_private.invalidate_band_requests(OLD.band_id);
+ ELSE
+   -- Pending signups do not count towards unanimous approval until approved.
+   IF EXISTS(SELECT 1 FROM public.profiles WHERE id=NEW.user_id AND status='approved') THEN
+     PERFORM bunkface_private.invalidate_band_requests(NEW.band_id);
+   END IF;
+ END IF;
  RETURN COALESCE(NEW,OLD);
 END $$;
 CREATE TRIGGER invalidate_on_membership_change
