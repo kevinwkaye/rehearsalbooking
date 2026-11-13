@@ -9,7 +9,8 @@ DECLARE
   v public.bookings%ROWTYPE;
   v_name text;
   v_reason text;
-  v_message text;
+  v_public_message text;
+  v_member_message text;
 BEGIN
   IF NOT public.is_approved() THEN RAISE EXCEPTION 'PERMISSION DENIED'; END IF;
   -- Validation belongs in the database as well as the browser.
@@ -26,17 +27,18 @@ BEGIN
 
   UPDATE public.bookings SET status='cancelled',updated_at=now() WHERE id=p_id;
   SELECT name INTO v_name FROM public.bands WHERE id=v.band_id;
-  v_message:=coalesce(v_name,'Band')||' cancelled '||
-    to_char(v.practice_date,'Dy DD Mon')||'. The room is available.'||
+  v_public_message:=coalesce(v_name,'Band')||' cancelled '||
+    to_char(v.practice_date,'Dy DD Mon')||'. The room is available.';
+  v_member_message:=v_public_message||
     CASE WHEN v_reason IS NULL THEN '' ELSE ' Reason: '||v_reason END;
 
   -- Preserve existing announcement to members of other bands.
-  PERFORM public.broadcast_booking(v.band_id,'Rehearsal cancelled',v_message);
+  PERFORM public.broadcast_booking(v.band_id,'Rehearsal cancelled',v_public_message);
 
   -- Additionally notify every approved member of the affected band,
   -- including whoever cancelled. DISTINCT prevents duplicate recipients.
   INSERT INTO public.notifications(recipient_user_id,title,body)
-  SELECT DISTINCT m.user_id,'Rehearsal cancelled',v_message
+  SELECT DISTINCT m.user_id,'Rehearsal cancelled',v_member_message
   FROM public.band_memberships m
   JOIN public.profiles p ON p.id=m.user_id
   WHERE m.band_id=v.band_id AND p.status='approved';
