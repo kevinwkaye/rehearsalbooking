@@ -6,7 +6,7 @@ import {dateKey,monthCells,describeDate,times,todayInLondon} from './domain.mjs'
 import type {Profile,Band,BandMembership,Booking,Notice,Audit,PracticeRequest,PracticeConfirmation} from './types';
 import {VAPID_PUBLIC_KEY} from './pushPublicKey';
 
-const SUPPORT=(import.meta.env.VITE_SUPPORT_EMAIL as string|undefined)?.trim()||'bunkface_booking_boutique@proton.me';
+const SUPPORT=(import.meta.env.VITE_SUPPORT_EMAIL as string|undefined)?.trim()||'';
 const TIME_OPTIONS=times();
 const WEEKDAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const STUDIO_COLOURS=['#A30000','#D84797','#FF7700','#00AFB5','#7DDF64'];
@@ -339,7 +339,7 @@ export default function App(){
  if(recovering||new URLSearchParams(window.location.search).has('reset'))return <RecoveryScreen onComplete={()=>{setRecovering(false);void refresh();}}/>;
  if(profile.role==='band'&&!profile.band_id&&profile.status==='pending')return <ChooseBandScreen onDone={()=>void refresh()} onLogout={()=>void doLogout()}/>;
  if(profile.must_change_password)return <ChangePasswordScreen onDone={()=>void refresh()} onLogout={()=>void doLogout()}/>;
- if(!approved)return <main className="auth-shell"><section className="auth-card"><Logo/><div className="pending-icon"><Clock size={32}/></div><h1>{profile.status==='pending'?'Waiting for approval':profile.status==='rejected'?'Registration declined':'Account deactivated'}</h1><p className="auth-lead">{profile.status==='pending'?'Your selected bands have been sent to the administrator for approval.':<>Contact <a className="support-email" href={`mailto:${SUPPORT}`}>{SUPPORT}</a> if you think this is a mistake.</>}</p><div className="button-row"><button className="button subtle" onClick={()=>void refresh()}><RefreshCw size={16}/> Check again</button><button className="button subtle" onClick={doLogout}><LogOut size={16}/> Log out</button></div></section></main>;
+ if(!approved)return <main className="auth-shell"><section className="auth-card"><Logo/><div className="pending-icon"><Clock size={32}/></div><h1>{profile.status==='pending'?'Waiting for approval':profile.status==='rejected'?'Registration declined':'Account deactivated'}</h1><p className="auth-lead">{profile.status==='pending'?'Your selected bands have been sent to the administrator for approval.':SUPPORT?<>Contact <a className="support-email" href={`mailto:${SUPPORT}`}>{SUPPORT}</a> if you think this is a mistake.</>:<>Contact the room administrator if you think this is a mistake.</>}</p><div className="button-row"><button className="button subtle" onClick={()=>void refresh()}><RefreshCw size={16}/> Check again</button><button className="button subtle" onClick={doLogout}><LogOut size={16}/> Log out</button></div></section></main>;
   return <div className={`app-layout ${panel==='calendar'?'calendar-mode':''}`}>
    <header className="site-header"><div className="header-inner"><Logo small/>
     <nav className="desktop-nav"><button className={panel==='calendar'?'active':''} onClick={()=>setPanel('calendar')}><CalendarDays size={17}/> Calendar</button>{admin&&<button className={panel==='admin'?'active':''} onClick={()=>setPanel('admin')}><ShieldCheck size={17}/> Admin</button>}</nav>
