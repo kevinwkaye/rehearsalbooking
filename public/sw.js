@@ -1,10 +1,10 @@
 // Cache only app-shell assets; never cache API data or calendar availability.
-const CACHE='88-bunkspace-shell-v3';
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/icon.svg','/manifest.webmanifest'])));self.skipWaiting();});
+const CACHE='88-bunkspace-shell-v4';
+self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/icon.svg','/pwa-icon.svg','/88-bunkspace-logo.webp','/notification-badge.png','/manifest.webmanifest','/help.html'])));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('push',event=>{let data={};try{data=event.data?.json()??{};}catch{data={title:'88 Bunkspace',body:'A booking has changed.'};}
 const title=String(data.title||'88 Bunkspace'); const body=String(data.body||'A booking has changed.');const target=data.url==='/?admin=approvals'?'/?admin=approvals':'/?notifications=1';
-event.waitUntil(self.registration.showNotification(title,{body,icon:'/icon.svg',badge:'/icon.svg',tag:String(data.tag||'bunkface'),data:{url:target}}));});
+event.waitUntil(self.registration.showNotification(title,{body,icon:'/88-bunkspace-logo.webp',badge:'/notification-badge.png',tag:String(data.tag||'bunkface'),data:{url:target}}));});
 self.addEventListener('notificationclick',event=>{
  const url=event.notification.data?.url==='/?admin=approvals'?'/?admin=approvals':'/?notifications=1';
  const destination=new URL(url,self.location.origin).href;
