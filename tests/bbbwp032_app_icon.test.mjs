@@ -24,6 +24,6 @@ test('PWA manifest points at logo, not the old 88-only glyph or masked tile',()=
 
 test('updated SW precaches full PWA icon but preserves Android notification badge',()=>{
  assert.match(sw,/88-bunkspace-shell-v6/);
- assert.match(sw,/\/pwa-full-logo\.svg/);
+ assert.match(sw,/\/pwa-bunkspace-icon\.svg/);
  assert.match(sw,/badge:'\/notification-badge\.png'/);
 });
