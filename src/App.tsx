@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState, type FormEvent, type CSSProperties} from 'react';
+import {useCallback,useEffect,useId,useMemo,useRef,useState, type FormEvent, type CSSProperties} from 'react';
 import {ArrowRight,Bell,CalendarDays,Check,ChevronLeft,ChevronRight,Clock,LogOut,Menu,Plus,RefreshCw,ShieldCheck,Trash2,X} from 'lucide-react';
 import type {Session} from '@supabase/supabase-js';
 import {db,configured,rpc,readableError} from './supabase';
@@ -15,6 +15,34 @@ const getMonthTitle=(year:number,month:number)=>new Intl.DateTimeFormat('en-GB',
 
 function Logo({small=false}:{small?:boolean}){return <div className={'logo logo-art'+(small?' logo-art-small':'')}><img src="/88-bunkspace-logo.webp" alt="88 Bunkspace" width={624} height={310} decoding="async"/></div>;}
 function StatusMessage({error,success}:{error:string;success:string}){return <>{error&&<div role="alert" className="notice error">{error}</div>}{success&&<div role="status" className="notice success">{success}</div>}</>;}
+
+type PasswordFieldProps={
+ label:string;
+ value:string;
+ onChange:(value:string)=>void;
+ autoComplete:'current-password'|'new-password';
+ minLength?:number;
+ placeholder?:string;
+ required?:boolean;
+ disabled?:boolean;
+};
+function PasswordField({label,value,onChange,autoComplete,minLength,placeholder,required=true,disabled=false}:PasswordFieldProps){
+ const [visible,setVisible]=useState(false);
+ const fieldId=useId();
+ return <div className="password-field">
+  <label htmlFor={fieldId}>{label}</label>
+  <div className="password-input-row">
+   <input id={fieldId} type={visible?'text':'password'} autoComplete={autoComplete}
+    minLength={minLength} placeholder={placeholder} value={value}
+    required={required} disabled={disabled} onChange={e=>onChange(e.target.value)}/>
+   <button className="password-visibility-toggle" type="button" aria-controls={fieldId}
+    aria-pressed={visible} aria-label={`${visible?'Hide':'Show'} ${label.toLowerCase()}`}
+    onClick={()=>setVisible(previous=>!previous)}>
+    {visible?'Hide':'Show'}
+   </button>
+  </div>
+ </div>;
+}
 
 type SignupBand={id:string;name:string;colour:string};
 
@@ -53,8 +81,8 @@ function AuthScreen({onDone}:{onDone:()=>void}){
   <form onSubmit={submit} className="form-stack">
    {mode==='signup'&&<><label>Your name<input value={name} required minLength={2} maxLength={80} autoComplete="name" placeholder="e.g. James" onChange={e=>setName(e.target.value)}/></label><fieldset className="signup-band-picker"><legend>Select your bands</legend><p>Tick every band you play in. Adam approves your account once.</p>{availableBands.map(b=><label key={b.id} className="band-checkbox"><input type="checkbox" checked={selectedBands.includes(b.id)} onChange={e=>setSelectedBands(prev=>e.target.checked?[...prev,b.id]:prev.filter(id=>id!==b.id))}/><span className="band-dot" style={{background:b.colour}}/>{b.name}</label>)}{availableBands.length===0&&<p className="helper">No bands available. Ask the administrator to add one.</p>}</fieldset></>}
    <label>Email address<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/></label>
-   {mode!=='forgot'&&<label>Password<input type="password" required minLength={mode==='signup'?10:undefined} autoComplete={mode==='signup'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder={mode==='signup'?'At least 10 characters':'Your password'}/></label>}
-   {mode==='signup'&&<label>Confirm password<input type="password" autoComplete="new-password" required value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Enter it again"/></label>}
+   {mode!=='forgot'&&<PasswordField key={mode} label="Password" required minLength={mode==='signup'?10:undefined} autoComplete={mode==='signup'?'new-password':'current-password'} value={password} onChange={setPassword} placeholder={mode==='signup'?'At least 10 characters':'Your password'}/>} 
+   {mode==='signup'&&<PasswordField label="Confirm password" autoComplete="new-password" required value={confirm} onChange={setConfirm} placeholder="Enter it again"/>}
    <StatusMessage error={error} success={success}/>
    <button className="button primary full" type="submit" disabled={busy}>{busy?'One moment…':mode==='signup'?'Create account':mode==='forgot'?'Send reset link':'Open calendar'} <ArrowRight size={17}/></button>
   </form>
@@ -86,7 +114,7 @@ function ChangePasswordScreen({onDone,onLogout}:{onDone:()=>void;onLogout:()=>vo
  const [password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  async function save(e:FormEvent){e.preventDefault();if(password!==confirm){setError('The passwords do not match.');return;}setBusy(true);setError('');try{const {error}=await db.auth.updateUser({password});if(error)throw error;await rpc('complete_password_change');onDone();}catch(e){setError(readableError(e));}finally{setBusy(false);}}
  return <main className="auth-shell"><section className="auth-card"><Logo/><h1 className="login-heading">Set a new password</h1><p className="auth-lead">The administrator reset your login. Choose your own password to continue.</p>
-  <form className="form-stack" onSubmit={save}><label>New password<input autoComplete="new-password" type="password" value={password} minLength={10} required onChange={e=>setPassword(e.target.value)}/></label><label>Confirm password<input autoComplete="new-password" type="password" minLength={10} required value={confirm} onChange={e=>setConfirm(e.target.value)}/></label><StatusMessage error={error} success=""/><button type="submit" className="button primary full" disabled={busy}>Save password</button></form>
+  <form className="form-stack" onSubmit={save}><PasswordField label="New password" autoComplete="new-password" value={password} minLength={10} required onChange={setPassword}/><PasswordField label="Confirm password" autoComplete="new-password" minLength={10} required value={confirm} onChange={setConfirm}/><StatusMessage error={error} success=""/><button type="submit" className="button primary full" disabled={busy}>Save password</button></form>
   <button className="admin-login-link" onClick={onLogout}>Log out</button></section></main>;
 }
 
@@ -97,7 +125,7 @@ function RecoveryScreen({onComplete}:{onComplete:()=>void}){
    window.history.replaceState({},'',window.location.pathname);await db.auth.signOut();onComplete();
   }catch(err){setError(readableError(err));}finally{setBusy(false);}}
  return <main className="auth-shell"><section className="auth-card"><Logo/><h1 className="login-heading">Choose a new password</h1><p className="auth-lead">Use a unique password with at least 10 characters.</p>
-  <form onSubmit={save} className="form-stack"><label>New password<input type="password" autoComplete="new-password" minLength={10} required value={password} onChange={e=>setPassword(e.target.value)}/></label><label>Confirm password<input type="password" autoComplete="new-password" minLength={10} required value={confirm} onChange={e=>setConfirm(e.target.value)}/></label>{error&&<div className="notice error" role="alert">{error}</div>}<button className="button primary full" disabled={busy}>{busy?'Saving…':'Save new password'}</button></form></section></main>;
+  <form onSubmit={save} className="form-stack"><PasswordField label="New password" autoComplete="new-password" minLength={10} required value={password} onChange={setPassword}/><PasswordField label="Confirm password" autoComplete="new-password" minLength={10} required value={confirm} onChange={setConfirm}/>{error&&<div className="notice error" role="alert">{error}</div>}<button className="button primary full" disabled={busy}>{busy?'Saving…':'Save new password'}</button></form></section></main>;
 }
 
 function ProposalVoteCard({proposal,votes,myId,onResult,compact=false}:{proposal:PracticeRequest;votes:PracticeConfirmation[];myId:string;onResult:(result:string)=>void;compact?:boolean}){
@@ -336,7 +364,7 @@ function AdminPanel({profiles,bands,memberships,bookings,audits,onRefresh,onMess
    {deleteTarget&&<div className="modal-backdrop"><section className="modal form-stack" role="dialog" aria-modal="true" aria-label="Confirm deletion"><div className="modal-header"><span className="eyebrow">PLEASE CONFIRM</span><button type="button" className="icon-button" aria-label="Close" onClick={()=>setDeleteTarget(null)}><X/></button></div><h2>Delete {deleteTarget.name}?</h2><p className="subdued">{deleteTarget.kind==='member'?'This permanently removes the login. Their past bookings stay in the rehearsal history.':'Members will need to choose a new band. If this band has confirmed bookings, cancel them first. Past booking history will be preserved.'}</p><div className="button-row"><button className="button subtle" onClick={()=>setDeleteTarget(null)}>Keep it</button><button className="button danger" disabled={busy!==null} onClick={()=>void confirmDeletion()}>{busy==='deleting'?'Deleting…':'Yes, delete'}</button></div></section></div>}
   {edit&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={saveBand} aria-modal="true" role="dialog" aria-label="Edit band"><div className="modal-header"><span className="eyebrow">EDIT BAND</span><button type="button" className="icon-button" onClick={()=>setEdit(null)} aria-label="Close"><X/></button></div><h2>{edit.name}</h2><label>Band name<input required minLength={2} maxLength={80} value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></label><label>Expected band members (information only)<input type="number" min="1" max="50" required value={editForm.member_count} onChange={e=>setEditForm({...editForm,member_count:Number(e.target.value)})}/></label><label>Colour<div className="colour-options">{STUDIO_COLOURS.map(c=><button type="button" key={c} className={`colour-chip ${editForm.colour===c?'active':''}`} aria-label={`Choose colour ${c}`} style={{background:c}} onClick={()=>setEditForm({...editForm,colour:c})}>{editForm.colour===c&&<Check size={18} color={hexIsLight(c)?'#121212':'#FFF3D6'}/>}</button>)}</div></label><button className="button primary" disabled={busy!==null}>Save band</button></form></div>}
   {changing&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={saveMemberBand} role="dialog" aria-modal="true" aria-label="Change member band"><div className="modal-header"><span className="eyebrow">MEMBER BAND</span><button type="button" className="icon-button" onClick={()=>setChanging(null)} aria-label="Close"><X/></button></div><h2>Bands for {changing.contact_name}</h2><p className="subdued">Only the administrator can change memberships.</p><fieldset className="signup-band-picker"><legend>Assigned bands</legend>{bands.map(b=><label className="band-checkbox" key={b.id}><input type="checkbox" checked={assignedBands.includes(b.id)} onChange={e=>setAssignedBands(old=>e.target.checked?[...old,b.id]:old.filter(id=>id!==b.id))}/>{b.name}</label>)}</fieldset><button className="button primary" disabled={busy!==null||assignedBands.length===0}>Save memberships</button></form></div>}
-  {passwordTarget&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={resetPassword} role="dialog" aria-modal="true" aria-label="Reset member password"><div className="modal-header"><span className="eyebrow">PASSWORD</span><button type="button" className="icon-button" onClick={()=>setPasswordTarget(null)} aria-label="Close"><X/></button></div><h2>Reset password</h2><p className="subdued">Set a temporary password for {passwordTarget.contact_name}. Share it privately. They must change it on login.</p><label>Temporary password<input required minLength={10} type="password" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)}/></label><button className="button primary" disabled={busy!==null}>Save temporary password</button></form></div>}
+  {passwordTarget&&<div className="modal-backdrop"><form className="modal form-stack" onSubmit={resetPassword} role="dialog" aria-modal="true" aria-label="Reset member password"><div className="modal-header"><span className="eyebrow">PASSWORD</span><button type="button" className="icon-button" onClick={()=>setPasswordTarget(null)} aria-label="Close"><X/></button></div><h2>Reset password</h2><p className="subdued">Set a temporary password for {passwordTarget.contact_name}. Share it privately. They must change it on login.</p><PasswordField label="Temporary password" required minLength={10} autoComplete="new-password" value={newPassword} onChange={setNewPassword}/><button className="button primary" disabled={busy!==null}>Save temporary password</button></form></div>}
  </section>;
 }
 
