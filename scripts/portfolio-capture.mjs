@@ -129,7 +129,7 @@ try{
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(LOCAL+'/',{waitUntil:'domcontentloaded',timeout:45000});
-  await page.getByText('Calendar',{exact:true}).first().waitFor({timeout:15000});
+  await page.locator('.calendar-grid').waitFor({timeout:15000});
   await sleep(700);
   if(admin){
    if(width<=740) {
