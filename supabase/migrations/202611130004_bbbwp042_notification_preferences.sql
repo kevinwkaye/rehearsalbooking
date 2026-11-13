@@ -105,7 +105,7 @@ BEGIN
  INSERT INTO public.audit_events(actor_id,action,details)
  VALUES(NEW.id,'account.registered',jsonb_build_object('user_id',NEW.id,'band_ids',v_requested));
  RETURN NEW;
-END $function$
+END $function$;
 
 CREATE OR REPLACE FUNCTION public.choose_band_once(p_band_id uuid)
  RETURNS void
@@ -131,4 +131,4 @@ BEGIN
  AND COALESCE((SELECT pref.registration_alerts FROM public.admin_notification_preferences pref WHERE pref.user_id=p.id),true);
  INSERT INTO public.audit_events(actor_id,action,details)
  VALUES(auth.uid(),'member.band_selected',jsonb_build_object('band_id',p_band_id));
-END $function$
+END $function$;
