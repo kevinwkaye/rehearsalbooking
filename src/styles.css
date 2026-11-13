@@ -125,3 +125,15 @@ h1,h2,h3,h4,strong,b,.logo strong,.stat-grid b{font-family:'LEMONMILK',Arial,san
 .auth-card .auth-lead{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal;}
 .auth-card .support-email{display:inline;color:#F3B66F;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere;word-break:break-word;}
 .auth-card .support-email:focus-visible{outline:2px solid #F3B66F;outline-offset:3px;}
+
+/* BBBWP0.3.1: one visible help shortcut on mobile and desktop. */
+.site-header .help-nav-link{display:grid;place-items:center;flex:none;width:34px;min-width:34px;height:40px;border:1px solid #596372;border-radius:4px;color:#F3C079;text-decoration:none;font-size:1.1rem;font-weight:700;line-height:1;background:#252B34;}
+.site-header .help-nav-link:hover{border-color:#F3C079;color:#FFF3D6;}
+.site-header .help-nav-link:focus-visible,.auth-help-link:focus-visible{outline:2px solid #F3C079;outline-offset:3px;}
+.auth-help-link{display:inline-flex;align-items:center;margin:17px 0 0;padding:6px 0;color:#F3C079;font-size:.78rem;text-decoration:underline;text-underline-offset:4px;}
+@media(max-width:390px){
+ .site-header .header-inner{gap:5px;padding-left:9px;padding-right:9px;}
+ .site-header .header-actions{gap:0;}
+ .site-header .header-actions .icon-button{width:38px;height:40px;}
+ .site-header .help-nav-link{width:30px;min-width:30px;height:38px;}
+}
