@@ -119,3 +119,9 @@ h1,h2,h3,h4,strong,b,.logo strong,.stat-grid b{font-family:'LEMONMILK',Arial,san
  .site-header .header-inner{padding-top:8px;padding-bottom:8px}
 }
 @media(max-width:390px){.site-header .logo-art img{width:122px}}
+
+/* BBBWP0.3.1: keep long email contacts inside narrow auth cards. */
+.auth-card{min-width:0;max-width:100%;}
+.auth-card .auth-lead{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal;}
+.auth-card .support-email{display:inline;color:#F3B66F;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere;word-break:break-word;}
+.auth-card .support-email:focus-visible{outline:2px solid #F3B66F;outline-offset:3px;}
