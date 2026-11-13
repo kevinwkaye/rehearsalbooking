@@ -137,3 +137,17 @@ h1,h2,h3,h4,strong,b,.logo strong,.stat-grid b{font-family:'LEMONMILK',Arial,san
  .site-header .header-actions .icon-button{width:38px;height:40px;}
  .site-header .help-nav-link{width:30px;min-width:30px;height:38px;}
 }
+
+/* BBBWP0.3.1: centre the temporary loading screen shown by native mobile
+   pull-to-refresh. Keep the signed-in header's left-logo/right-actions layout. */
+html,body,#root{width:100%;max-width:100%;overflow-x:clip;}
+.config-screen{width:min(100%,520px);min-height:100dvh;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;}
+.config-screen .logo-art{width:100%;justify-content:center;}
+.config-screen .logo-art img{width:min(72vw,280px);height:auto;margin-inline:auto;}
+.config-screen p,.config-screen h2{max-width:100%;overflow-wrap:anywhere;}
+@media(max-width:740px){
+ .auth-shell{width:100%;min-height:100svh;align-items:center;justify-content:center;}
+ .auth-card{width:min(100%,465px);margin-inline:auto;}
+ .auth-card .logo-art{width:100%;justify-content:center;}
+ .auth-card .logo-art img{max-width:100%;margin-inline:auto;}
+}
