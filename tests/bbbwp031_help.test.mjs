@@ -14,14 +14,20 @@ test('login page exposes how-to page without authentication',()=>{
  assert.match(app,/className="auth-help-link" href="\/help\.html"/);
  assert.match(help,/href="\/"[^>]*>.*Back to the app/);
 });
-test('guide is static and covers registration, booking, approvals, admin and recovery',()=>{
+test('guide is a short member-only quick start, not an admin manual',()=>{
  assert.match(help,/<!doctype html>/i);
- for(const id of ['getting-started','book','approvals','notifications','admin','problems']){
+ for(const id of ['getting-started','book','approvals','changes','notifications']){
   assert.match(help,new RegExp('id="'+id+'"'));
-  assert.match(help,new RegExp('href="#'+id+'"'));
+
  }
- assert.match(help,/at least 10 characters/i);
- assert.match(help,/everyone currently registered and approved/i);
+ assert.match(help,/New here\? Create an account/);
+ assert.match(help,/Request practice/);
+ assert.match(help,/Confirm/);
+ assert.match(help,/Decline/);
+ assert.match(help,/Change of plans/);
+ assert.match(help,/clear old messages/);
+ assert.doesNotMatch(help,/id="admin"|Manage bands|delete an account|audit trail|create bands/i);
+ assert.ok(help.length<8000,'Keep the quick guide concise');
  assert.match(help,/Forgot password\?/);
  assert.doesNotMatch(help,/SUPABASE_SERVICE_ROLE_KEY|sb_secret_|password=|\/rest\/v1\//i);
 });
