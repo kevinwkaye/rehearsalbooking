@@ -173,11 +173,25 @@ function BookingDialog({date,booking,proposal,votes,myId,band,memberBands,admin,
 
 function NotificationPanel({notices,userId,requests,votes,onClose,onRefresh,onMessage}:{notices:Notice[];userId:string;requests:PracticeRequest[];votes:PracticeConfirmation[];onClose:()=>void;onRefresh:()=>void;onMessage:(message:string)=>void}){
  const [pushMessage,setPushMessage]=useState('');
- 
+ const [confirmClear,setConfirmClear]=useState(false),[clearing,setClearing]=useState(false),[clearMessage,setClearMessage]=useState('');
+ async function clearNotifications(){
+  if(!notices.length){setConfirmClear(false);return;}
+  setClearing(true);setClearMessage('');
+  try{
+   const ordered=[...notices].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
+   const count=await rpc<number>('clear_my_notifications',{p_through_id:ordered[0].id});
+   setConfirmClear(false);
+   setClearMessage(count===1?'1 notification cleared.':`${count} notifications cleared.`);
+   onRefresh();
+  }catch(err){setClearMessage(readableError(err));}
+  finally{setClearing(false);}
+ }
  return <div className="overlay-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><aside className="side-panel" aria-label="Notifications">
   <div className="panel-heading"><h2>Notifications</h2><button aria-label="Close" className="icon-button" onClick={onClose}><X/></button></div>
   {requests.length>0&&<div className="notification-requests"><h3>Practice confirmations</h3>{requests.map(req=><ProposalVoteCard key={req.id} proposal={req} votes={votes} myId={userId} onResult={r=>{onMessage(r==='confirmed'?'Practice booked.':r==='declined'?'Request declined.':'Response saved.');onRefresh();}} />)}</div>}
-  <div className="push-settings"><p className="push-guidance">iPhone: add 88 Bunkspace to your Home Screen first, then enable alerts here. Android: allow notifications when prompted.</p><button className="button subtle small" onClick={()=>void enablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Enable phone alerts</button><button className="button subtle small" onClick={()=>void disablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Disable phone alerts</button>{pushMessage&&<p role="status" className="fineprint">{pushMessage}</p>}</div>
+  <div className="push-settings"><p className="push-guidance">iPhone: add 88 Bunkspace to your Home Screen first, then enable alerts here. Android: allow notifications when prompted.</p><button className="button subtle small" onClick={()=>void enablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Enable phone alerts</button><button className="button subtle small" onClick={()=>void disablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Disable phone alerts</button><button type="button" className="button subtle small" disabled={notices.length===0||clearing} onClick={()=>{setClearMessage('');setConfirmClear(true);}}>Clear notifications</button>{pushMessage&&<p role="status" className="fineprint">{pushMessage}</p>}</div>
+  {confirmClear&&<div className="clear-notifications-confirm" role="group" aria-label="Confirm clearing notification history"><p>Clear your {notices.length} notification{notices.length===1?'':'s'}? This removes past messages, not pending practice confirmations or phone alert settings.</p><div className="button-row"><button type="button" className="button subtle small" disabled={clearing} onClick={()=>setConfirmClear(false)}>Keep notifications</button><button type="button" className="button danger small" disabled={clearing} onClick={()=>void clearNotifications()}>{clearing?'Clearing…':'Yes, clear'}</button></div></div>}
+  {clearMessage&&<p className="clear-notifications-message" role="status">{clearMessage}</p>}
   {notices.length===0?<p className="empty">Nothing new.</p>:notices.map(n=><div key={n.id} className={`notice-item ${n.read_at?'':'unread'}`}><span className="notice-dot"/><span><strong>{n.title}</strong><small>{n.body}</small><em>{new Date(n.created_at).toLocaleString('en-GB')}</em></span></div>)}
  </aside></div>;
 }
