@@ -6,7 +6,7 @@ import {dateKey,monthCells,describeDate,times,todayInLondon} from './domain.mjs'
 import type {Profile,Band,BandMembership,Booking,Notice,Audit,PracticeRequest,PracticeConfirmation} from './types';
 import {VAPID_PUBLIC_KEY} from './pushPublicKey';
 
-const SUPPORT='bunkface_booking_boutique@proton.me';
+const SUPPORT=(import.meta.env.VITE_SUPPORT_EMAIL as string|undefined)?.trim()||'';
 const TIME_OPTIONS=times();
 const WEEKDAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const STUDIO_COLOURS=['#A30000','#D84797','#FF7700','#00AFB5','#7DDF64'];
@@ -60,6 +60,7 @@ function AuthScreen({onDone}:{onDone:()=>void}){
   </form>
   <button className="admin-login-link" type="button" onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirm('');setError('');setSuccess('');}}>{mode==='login'?'New here? Create an account':'Back to sign in'}</button>
   {mode==='login'&&<button className="admin-login-link" type="button" onClick={()=>{setMode('forgot');setError('');setSuccess('');}}>Forgot password?</button>}
+  <a className="auth-help-link" href="/help.html" aria-label="How to use 88 Bunkspace">? &nbsp;How it works</a>
   <p className="fineprint">{mode==='signup'?'Your selected bands will be reviewed by the administrator.':'88 Bunkspace'}</p>
  </section><p className="auth-footer">88 BUNKSPACE</p></main>;
 }
@@ -338,11 +339,11 @@ export default function App(){
  if(recovering||new URLSearchParams(window.location.search).has('reset'))return <RecoveryScreen onComplete={()=>{setRecovering(false);void refresh();}}/>;
  if(profile.role==='band'&&!profile.band_id&&profile.status==='pending')return <ChooseBandScreen onDone={()=>void refresh()} onLogout={()=>void doLogout()}/>;
  if(profile.must_change_password)return <ChangePasswordScreen onDone={()=>void refresh()} onLogout={()=>void doLogout()}/>;
- if(!approved)return <main className="auth-shell"><section className="auth-card"><Logo/><div className="pending-icon"><Clock size={32}/></div><h1>{profile.status==='pending'?'Waiting for approval':profile.status==='rejected'?'Registration declined':'Account deactivated'}</h1><p className="auth-lead">{profile.status==='pending'?'Your selected bands have been sent to the administrator for approval.':`Contact ${SUPPORT} if you think this is a mistake.`}</p><div className="button-row"><button className="button subtle" onClick={()=>void refresh()}><RefreshCw size={16}/> Check again</button><button className="button subtle" onClick={doLogout}><LogOut size={16}/> Log out</button></div></section></main>;
+ if(!approved)return <main className="auth-shell"><section className="auth-card"><Logo/><div className="pending-icon"><Clock size={32}/></div><h1>{profile.status==='pending'?'Waiting for approval':profile.status==='rejected'?'Registration declined':'Account deactivated'}</h1><p className="auth-lead">{profile.status==='pending'?'Your selected bands have been sent to the administrator for approval.':SUPPORT?<>Contact <a className="support-email" href={`mailto:${SUPPORT}`}>{SUPPORT}</a> if you think this is a mistake.</>:<>Contact the room administrator if you think this is a mistake.</>}</p><div className="button-row"><button className="button subtle" onClick={()=>void refresh()}><RefreshCw size={16}/> Check again</button><button className="button subtle" onClick={doLogout}><LogOut size={16}/> Log out</button></div></section></main>;
   return <div className={`app-layout ${panel==='calendar'?'calendar-mode':''}`}>
    <header className="site-header"><div className="header-inner"><Logo small/>
     <nav className="desktop-nav"><button className={panel==='calendar'?'active':''} onClick={()=>setPanel('calendar')}><CalendarDays size={17}/> Calendar</button>{admin&&<button className={panel==='admin'?'active':''} onClick={()=>setPanel('admin')}><ShieldCheck size={17}/> Admin</button>}</nav>
-    <div className="header-actions"><button className="icon-button" aria-label="Refresh calendar" title="Refresh" onClick={()=>void refresh()}><RefreshCw size={19} className={fetching?'spin':''}/></button>
+    <div className="header-actions"><a className="help-nav-link" href="/help.html" aria-label="How to use 88 Bunkspace" title="How to use 88 Bunkspace">?</a><button className="icon-button" aria-label="Refresh calendar" title="Refresh" onClick={()=>void refresh()}><RefreshCw size={19} className={fetching?'spin':''}/></button>
      <button className="icon-button notify-button" aria-label="Notifications and band confirmations" onClick={()=>void openNotifications()}><Bell size={21}/>{(notices.some(n=>!n.read_at)||awaitingMyVote.length>0)&&<span className="notification-count"/>}</button>
      <button className="icon-button menu-button" aria-label="Menu" onClick={()=>setShowMenu(!showMenu)}><Menu size={21}/></button>
      <button className="button logout desktop-logout" onClick={doLogout}><LogOut size={16}/> Log out</button>

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#171A20">
+<meta name="description" content="How to join a band, book the room and approve rehearsals in 88 Bunkspace.">
+<link rel="icon" href="/icon.svg?v=bbbwp031" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>How it works | 88 Bunkspace</title>
+<style>
+@font-face{font-family:LEMONMILK;src:url('/fonts/LEMONMILK-Regular.otf') format('opentype');font-weight:400;font-display:swap}
+@font-face{font-family:LEMONMILK;src:url('/fonts/LEMONMILK-Bold.otf') format('opentype');font-weight:700;font-display:swap}
+:root{color-scheme:dark;font-family:LEMONMILK,Arial,sans-serif;background:#171A20;color:#F7F8FA;font-synthesis:none}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-width:280px}
+a{color:#F3C079;text-underline-offset:4px}
+a:focus-visible,summary:focus-visible{outline:2px solid #F3C079;outline-offset:4px}
+header{background:#1D212A;border-bottom:1px solid #343B46}
+.header-inner{max-width:920px;padding:12px 20px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:block;min-width:0}
+.brand img{display:block;width:clamp(120px,27vw,176px);height:auto}
+.back{font-size:.72rem;text-decoration:none;line-height:1.3;white-space:nowrap;border:1px solid #576171;border-radius:4px;padding:11px 12px;color:#F7F8FA}
+.back:hover{border-color:#F3C079}
+main{width:min(100%,920px);margin:auto;padding:clamp(24px,5vw,52px) 20px 80px}
+.intro{max-width:690px;border-bottom:1px solid #404751;padding-bottom:32px}
+.help-label{display:inline-block;font-family:ui-monospace,Menlo,Consolas,monospace;color:#F3C079;font-size:.82rem;margin-bottom:14px}
+h1,h2,h3{font-weight:700;letter-spacing:-.015em}
+h1{font-size:clamp(2.05rem,8vw,3.6rem);line-height:1.12;margin:0 0 15px}
+h2{font-size:clamp(1.25rem,3.6vw,1.6rem);line-height:1.35;margin:0 0 15px}
+h3{font-size:1rem;line-height:1.4;margin:16px 0 8px}
+p,li{font-size:clamp(.82rem,2.8vw,.94rem);line-height:1.8;color:#D0D7E0}
+.intro p{max-width:610px;margin:0;font-size:.95rem}
+h2 .number{display:inline-block;min-width:46px;color:#F3C079;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88rem;vertical-align:middle}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:23px 0 12px}
+.toc a{font-size:.72rem;text-decoration:none;color:#E6E9EF;border:1px solid #4A5360;padding:9px 10px;border-radius:4px}
+.toc a:hover{border-color:#F3C079}
+.guide{max-width:760px;margin-top:25px}
+.guide section{padding:25px 0 29px;border-bottom:1px solid #343E4A;scroll-margin-top:20px}
+.guide section:last-child{border-bottom:0}
+ol,ul{margin:10px 0 0;padding-left:23px}
+li{padding-left:4px;margin-bottom:8px;overflow-wrap:anywhere}
+li::marker{color:#F3C079}
+p{margin:10px 0 0;overflow-wrap:anywhere}
+.note{border-left:3px solid #F3C079;padding:8px 0 8px 15px;margin:18px 0 4px;color:#F3D5AE;background:transparent}
+.note strong{color:#FFF3D6}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin:26px 0 0}
+.links a{background:#F3B66F;color:#171A20;border:1px solid #C38B50;box-shadow:3px 3px 0 #000;text-decoration:none;padding:13px 19px;border-radius:4px;font-weight:700;font-size:.8rem;min-height:46px;display:inline-flex;align-items:center}
+.links a:active{transform:translate(3px,3px);box-shadow:none}
+.links a.secondary{background:#2F3742;color:#F7F8FA;border-color:#576171;box-shadow:none}
+footer{font-family:ui-monospace,Menlo,Consolas,monospace;padding-top:28px;border-top:1px solid #343E4A;color:#A4AFBD;font-size:.75rem}
+@media(max-width:390px){.header-inner{padding:9px 12px}.back{font-size:.64rem;padding:10px 9px}main{padding:22px 14px 60px}.toc a{font-size:.68rem}.guide section{padding:20px 0 25px}h2 .number{min-width:36px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="88 Bunkspace, back to app"><img src="/88-bunkspace-logo.webp" alt="88 Bunkspace" width="624" height="310"></a>
+    <a class="back" href="/">← Back to the app</a>
+  </div>
+</header>
+<main>
+  <div class="intro">
+    <span class="help-label">? / THE ROOM MANUAL</span>
+    <h1>How it works.</h1>
+    <p>One room. A few bands. Everyone knows when they're playing. Here's how to get set up, book a date and keep the calendar straight.</p>
+    <nav class="toc" aria-label="On this page">
+      <a href="#getting-started">Join a band</a>
+      <a href="#book">Book the room</a>
+      <a href="#approvals">Band confirmations</a>
+      <a href="#notifications">Notifications</a>
+      <a href="#admin">For the admin</a>
+      <a href="#problems">Problems?</a>
+    </nav>
+  </div>
+  <div class="guide">
+    <section id="getting-started" aria-labelledby="getting-title">
+      <h2 id="getting-title"><span class="number">01</span> Getting in</h2>
+      <ol>
+        <li>On the sign-in screen, tap <strong>New here? Create an account</strong>.</li>
+        <li>Enter your name and email, then tick <strong>every band you play in</strong>. You can select more than one.</li>
+        <li>Create a password with at least 10 characters and submit.</li>
+        <li>The administrator approves the account once. Until then, you can't book the room.</li>
+        <li>Once approved, sign in with your own email address and password.</li>
+      </ol>
+      <p class="note">Only the administrator can change your band assignments after you've registered. Ask them if you join or leave a band.</p>
+    </section>
+    <section id="book" aria-labelledby="book-title">
+      <h2 id="book-title"><span class="number">02</span> Booking a practice</h2>
+      <ol>
+        <li>Open the <strong>Calendar</strong> and choose a free date. Swipe sideways to move through months on mobile, or use the arrows.</li>
+        <li>Choose a start time. If you're in multiple bands, choose which band you're booking for.</li>
+        <li>Tap <strong>Request practice</strong>.</li>
+      </ol>
+      <p><strong>One confirmed booking per day.</strong> The start time is for information; confirming a rehearsal reserves the whole day for that band.</p>
+      <p class="note">Past dates can't be booked. A pending rehearsal request doesn't reserve a date: another band's request could be confirmed first.</p>
+      <h3>Need to move or cancel?</h3>
+      <p>Open your band's confirmed date in the calendar to update the start time or move the booking, or choose <strong>Cancel this practice</strong>. You can only manage rehearsals for your assigned bands. Admin can also manage bookings.</p>
+    </section>
+    <section id="approvals" aria-labelledby="approvals-title">
+      <h2 id="approvals-title"><span class="number">03</span> Band confirmations</h2>
+      <p><strong>Only one approved member registered for the band?</strong> Your rehearsal is confirmed straight away.</p>
+      <p><strong>Two or more approved members?</strong> Everyone currently registered and approved in that band must confirm. The person who requested it counts as the first confirmation.</p>
+      <ol>
+        <li>Bandmates get an in-app notice and, if enabled, a phone alert.</li>
+        <li>Open <strong>Notifications</strong> using the bell, find the rehearsal and choose <strong>Confirm</strong> or <strong>Decline</strong>.</li>
+        <li>When everyone confirms, the booking appears as a confirmed calendar date.</li>
+      </ol>
+      <p class="note">If someone declines, the request ends and the room stays available. If band membership changes while a request is pending, the band needs to submit a fresh request.</p>
+    </section>
+    <section id="notifications" aria-labelledby="notifications-title">
+      <h2 id="notifications-title"><span class="number">04</span> Notifications</h2>
+      <p>The bell in the top bar opens notifications. Opening it marks existing messages as read. <strong>It does not automatically confirm a rehearsal.</strong> You must still tap Confirm or Decline.</p>
+      <p>For phone alerts, open the bell, then choose <strong>Enable phone alerts</strong> and allow notifications in your device's settings.</p>
+      <ul>
+        <li><strong>Android:</strong> open the site in Chrome, allow notifications, and optionally add the app to your Home screen.</li>
+        <li><strong>iPhone:</strong> in Safari, add the site to your Home Screen first. Open the installed app and enable alerts there.</li>
+      </ul>
+      <p class="note">Phone alerts are optional. You can still check rehearsal confirmations through the app. If you move to a new website address, you may need to enable alerts again.</p>
+    </section>
+    <section id="admin" aria-labelledby="admin-title">
+      <h2 id="admin-title"><span class="number">05</span> Running the room</h2>
+      <p>The <strong>Admin</strong> section is only visible to the administrator.</p>
+      <ul>
+        <li><strong>Approvals:</strong> the Pending approvals counter takes you to accounts waiting to join. Review the selected bands, then approve the account.</li>
+        <li><strong>Bands:</strong> create bands, edit names, choose a colour and enter an expected member count. The expected count is for reference, not a booking threshold.</li>
+        <li><strong>Members:</strong> use <strong>Manage bands</strong> to add or remove band assignments. At least one band must remain assigned when saving.</li>
+        <li><strong>Accounts:</strong> deactivate, reactivate, reset a member's password or delete an account. Deleting an account preserves historical booking records.</li>
+        <li><strong>Activity:</strong> Recent activity shows an audit trail of account and booking actions.</li>
+      </ul>
+      <p class="note">The admin only votes on a rehearsal when they're a member of the band requesting it. They aren't an extra approver for everyone else.</p>
+    </section>
+    <section id="problems" aria-labelledby="problems-title">
+      <h2 id="problems-title"><span class="number">06</span> Stuck?</h2>
+      <h3>Forgot your password?</h3>
+      <p>Use <strong>Forgot password?</strong> on the sign-in screen, enter your registered email address and follow the reset link. Check your junk folder if it doesn't arrive.</p>
+      <h3>Account awaiting approval or deactivated?</h3>
+      <p>Only the administrator can approve or reactivate accounts. Contact the person running the room if your account or band membership needs changing.</p>
+      <h3>Can't request a practice?</h3>
+      <p>Check that you're signed in, your account is approved, you're assigned to the band, the date is available and you're connected to the internet.</p>
+      <div class="links"><a href="/">Open 88 Bunkspace</a><a class="secondary" href="/?notifications=1">Check notifications</a></div>
+    </section>
+  </div>
+  <footer>88 BUNKSPACE · A GUIDE FOR THE BANDS USING THE ROOM</footer>
+</main>
+</body>
+</html>
