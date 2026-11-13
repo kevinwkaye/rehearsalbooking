@@ -1,6 +1,6 @@
 // Cache only app-shell assets; never cache API data or calendar availability.
-const CACHE='88-bunkspace-shell-v5';
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/icon.svg','/pwa-full-logo.svg','/88-bunkspace-logo.webp','/notification-badge.png','/manifest.webmanifest','/help.html'])));self.skipWaiting();});
+const CACHE='88-bunkspace-shell-v6';
+self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/icon.svg','/pwa-bunkspace-icon.svg','/88-bunkspace-logo.webp','/notification-badge.png','/manifest.webmanifest','/help.html'])));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('push',event=>{let data={};try{data=event.data?.json()??{};}catch{data={title:'88 Bunkspace',body:'A booking has changed.'};}
 const title=String(data.title||'88 Bunkspace'); const body=String(data.body||'A booking has changed.');const target=data.url==='/?admin=approvals'?'/?admin=approvals':'/?notifications=1';
