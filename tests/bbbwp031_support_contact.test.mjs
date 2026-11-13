@@ -22,3 +22,8 @@ test('pending account copy and auth controls remain present',()=>{
  assert.match(app,/Check again/);
  assert.match(app,/Log out/);
 });
+
+test('do not display previous Proton support mailbox as Gmail fallback',()=>{
+ assert.doesNotMatch(app,/bunkface_booking_boutique@proton\.me/);
+ assert.match(app,/Contact the room administrator if you think this is a mistake/);
+});
