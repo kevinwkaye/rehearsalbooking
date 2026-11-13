@@ -199,3 +199,9 @@ html,body,#root{width:100%;max-width:100%;overflow-x:clip;}
 .admin-alert-toggle small{font-size:.69rem;line-height:1.5;color:#B3BECD}
 .admin-alert-status{font-size:.73rem;line-height:1.55;color:#F3C58B;overflow-wrap:anywhere}
 .admin-alert-settings .button{align-self:flex-start;max-width:100%}
+
+/* Dismissible banners: text can wrap without shifting the close control. */
+.notice.dismissible{display:flex;align-items:flex-start;gap:12px}
+.notice.dismissible .notice-content{flex:1;min-width:0;overflow-wrap:anywhere}
+.notice.dismissible .mini-close{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;padding:0;margin:-3px -7px 0 0;float:none;border-radius:6px}
+.notice.dismissible .mini-close:hover{background:#FFFFFF1A}
