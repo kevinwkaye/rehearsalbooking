@@ -167,3 +167,23 @@ html,body,#root{width:100%;max-width:100%;overflow-x:clip;}
 .clear-notifications-confirm p{color:#F2DFE2;font-size:.76rem;line-height:1.6;margin-bottom:11px;overflow-wrap:anywhere}
 .clear-notifications-confirm .button-row{gap:8px}
 .clear-notifications-message{font-size:.78rem;line-height:1.6;color:#E8C389;overflow-wrap:anywhere;margin:6px 0 14px}
+
+/* BBBWP0.4.1: available future dates should look selectable at a glance.
+   Keep confirmed band colours, pending proposals and the Today outline intact. */
+.calendar-day:not(.booked):not(.past):not(.pending-practice){
+ background:#37545E;
+ border-color:#6E98A5;
+ color:#F5FAFC;
+}
+.calendar-day:not(.booked):not(.past):not(.pending-practice):hover:not(:disabled){
+ background:#466670;
+ border-color:#9BC3CF;
+}
+.calendar-day.past:not(.booked),.calendar-day.past:not(.booked):hover{
+ background:#1B2027;
+ border-color:#343B45;
+ color:#737F8B;
+ opacity:1;
+ cursor:not-allowed;
+}
+.calendar-day.past:not(.booked) .day-number{opacity:.78}

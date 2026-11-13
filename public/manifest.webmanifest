@@ -8,7 +8,7 @@
   "theme_color": "#171A20",
   "icons": [
     {
-      "src": "/pwa-full-logo.svg",
+      "src": "/pwa-bunkspace-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

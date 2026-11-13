@@ -14,7 +14,7 @@ test('favicon and home-screen icon embed the client logo rather than old calenda
  assert.match(favicon,/<image[^>]+href="data:image\/webp;base64,/);
  assert.match(pwa,/<image[^>]+href="data:image\/webp;base64,/);
  assert.match(html,/icon\.svg\?v=bbbwp031/);
- assert.equal(manifest.icons[0].src,'/pwa-full-logo.svg');
+ assert.equal(manifest.icons[0].src,'/pwa-bunkspace-icon.svg');
 });
 test('Android notification badge is an actual transparent PNG with 88 glyph, not an SVG',()=>{
  assert.equal(badge.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
