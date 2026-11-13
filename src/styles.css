@@ -187,3 +187,15 @@ html,body,#root{width:100%;max-width:100%;overflow-x:clip;}
  cursor:not-allowed;
 }
 .calendar-day.past:not(.booked) .day-number{opacity:.78}
+
+/* BBBWP0.4.2: concise admin/owner alert preferences inside bell panel */
+.admin-alert-settings{border-top:1px solid #454E5D;border-bottom:1px solid #454E5D;margin:12px 0 18px;padding:18px 0;display:flex;flex-direction:column;align-items:stretch;gap:12px;min-width:0}
+.admin-alert-settings h3{font-size:1rem;margin:0}
+.admin-alert-description{font-size:.76rem;line-height:1.55;color:#BBC5D1;margin:0}
+.admin-alert-toggle{display:flex;align-items:flex-start;gap:11px;padding:10px 8px;border:1px solid #47515E;border-radius:10px;background:#2C3440;cursor:pointer;min-width:0}
+.admin-alert-toggle input[type="checkbox"]{width:18px;min-width:18px;height:18px;min-height:18px;flex:none;margin:2px 0 0;accent-color:#F3B66F}
+.admin-alert-toggle span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.admin-alert-toggle strong{font-size:.78rem;color:#F6F8FA;line-height:1.4}
+.admin-alert-toggle small{font-size:.69rem;line-height:1.5;color:#B3BECD}
+.admin-alert-status{font-size:.73rem;line-height:1.55;color:#F3C58B;overflow-wrap:anywhere}
+.admin-alert-settings .button{align-self:flex-start;max-width:100%}
