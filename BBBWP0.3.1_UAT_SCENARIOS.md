@@ -55,6 +55,9 @@
 - [ ] **E4 Long email on deactivated screen.** Use test account. **Expected:** Support text stays inside mobile card; tapping configured Gmail contact opens mail composer. Until a Gmail contact is configured, no incorrect email should be shown.
 - [ ] **E5 Colour and font.** Verify band colours, LEMONMILK glyphs and long names. **Expected:** No illegible text, clipped headings or colour-only identification.
 - [ ] **E6 Network and device checks.** Test slow/mobile network and offline. **Expected:** No phantom confirmation; error messages explain offline booking limitations.
+- [ ] **E7 Pull-to-refresh alignment.** On Android, pull down to refresh while signed out and signed in. **Expected:** Temporary loading logo and text remain centred, no sideways movement or horizontal scroll.
+- [ ] **E8 Branded icons.** Check the browser favicon, Android installed PWA icon, and Android notification in both collapsed and expanded views. **Expected:** The new logo's 88 motif is visible in the favicon/status bar (monochrome in status bar), the larger app icon shows the full supplied artwork, and no white square appears. If Android caches the previous icon, refresh or reinstall the PWA and retry.
+
 
 ## Sign-off log
 
