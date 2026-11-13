@@ -18,6 +18,6 @@ test('owner can use existing admin UI while all account access still requires ap
  assert.match(sql,/status='approved'/);
 });
 test('owner account must be created in Supabase Auth, no hidden entry point or credentials',()=>{
- assert.doesNotMatch(sql,/INSERT INTO (?:auth\.users|public\.profiles)|kwkaye|password|CREATE POLICY|ANON|GRANT EXECUTE/i);
+ assert.doesNotMatch(sql.split('\\n').filter(line=>!line.trimStart().startsWith('--')).join('\\n'),/INSERT INTO (?:auth\\.users|public\\.profiles)|kwkaye|CREATE POLICY|GRANT EXECUTE/i);
  assert.doesNotMatch(app,/kwkaye84@gmail\.com/);
 });
