@@ -8,7 +8,7 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const css=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
 const favicon=readFileSync(new URL('../public/icon.svg',import.meta.url),'utf8');
 const pwa=readFileSync(new URL('../public/pwa-icon.svg',import.meta.url),'utf8');
-const badge=readFileSync(new URL('../public/notification-badge.png'));
+const badge=readFileSync(new URL('../public/notification-badge.png',import.meta.url));
 
 test('favicon and home-screen icon embed the client logo rather than old calendar art',()=>{
  assert.match(favicon,/<image[^>]+href="data:image\/webp;base64,/);
