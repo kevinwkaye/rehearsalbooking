@@ -60,6 +60,7 @@ function AuthScreen({onDone}:{onDone:()=>void}){
   </form>
   <button className="admin-login-link" type="button" onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirm('');setError('');setSuccess('');}}>{mode==='login'?'New here? Create an account':'Back to sign in'}</button>
   {mode==='login'&&<button className="admin-login-link" type="button" onClick={()=>{setMode('forgot');setError('');setSuccess('');}}>Forgot password?</button>}
+  <a className="auth-help-link" href="/help.html" aria-label="How to use 88 Bunkspace">? &nbsp;How it works</a>
   <p className="fineprint">{mode==='signup'?'Your selected bands will be reviewed by the administrator.':'88 Bunkspace'}</p>
  </section><p className="auth-footer">88 BUNKSPACE</p></main>;
 }
@@ -342,7 +343,7 @@ export default function App(){
   return <div className={`app-layout ${panel==='calendar'?'calendar-mode':''}`}>
    <header className="site-header"><div className="header-inner"><Logo small/>
     <nav className="desktop-nav"><button className={panel==='calendar'?'active':''} onClick={()=>setPanel('calendar')}><CalendarDays size={17}/> Calendar</button>{admin&&<button className={panel==='admin'?'active':''} onClick={()=>setPanel('admin')}><ShieldCheck size={17}/> Admin</button>}</nav>
-    <div className="header-actions"><button className="icon-button" aria-label="Refresh calendar" title="Refresh" onClick={()=>void refresh()}><RefreshCw size={19} className={fetching?'spin':''}/></button>
+    <div className="header-actions"><a className="help-nav-link" href="/help.html" aria-label="How to use 88 Bunkspace" title="How to use 88 Bunkspace">?</a><button className="icon-button" aria-label="Refresh calendar" title="Refresh" onClick={()=>void refresh()}><RefreshCw size={19} className={fetching?'spin':''}/></button>
      <button className="icon-button notify-button" aria-label="Notifications and band confirmations" onClick={()=>void openNotifications()}><Bell size={21}/>{(notices.some(n=>!n.read_at)||awaitingMyVote.length>0)&&<span className="notification-count"/>}</button>
      <button className="icon-button menu-button" aria-label="Menu" onClick={()=>setShowMenu(!showMenu)}><Menu size={21}/></button>
      <button className="button logout desktop-logout" onClick={doLogout}><LogOut size={16}/> Log out</button>
