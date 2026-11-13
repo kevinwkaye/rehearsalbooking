@@ -151,3 +151,19 @@ html,body,#root{width:100%;max-width:100%;overflow-x:clip;}
  .auth-card .logo-art{width:100%;justify-content:center;}
  .auth-card .logo-art img{max-width:100%;margin-inline:auto;}
 }
+
+/* BBBWP0.3.3: optional cancellation and decline reasons. */
+.practice-decline-controls,.decline-reason-panel{display:flex;flex-direction:column;gap:10px;min-width:0;width:100%}
+.decline-reason-panel{border-top:1px solid #4E5A65;padding-top:12px}
+.decline-reason-panel label,.cancellation-reason-label{display:flex;flex-direction:column;gap:8px;color:#F2F4F7;font-size:.76rem;line-height:1.5;font-weight:700;min-width:0}
+.decline-reason-panel textarea,.cancellation-reason-label textarea{width:100%;min-height:76px;resize:vertical;font-size:.76rem;line-height:1.5;font-weight:400}
+.reason-counter{font-size:.66rem;color:#AEBCCB;text-align:right;display:block;line-height:1.4}
+.decline-reason-panel .button-row{display:flex;flex-wrap:wrap;gap:8px}
+.confirm-box .cancellation-reason-label{margin-top:14px;margin-bottom:4px}
+.confirm-box .reason-counter{margin-bottom:12px}
+
+/* BBBWP0.3.3: confirm before clearing personal in-app notification history. */
+.clear-notifications-confirm{border:1px solid #8A6970;border-radius:10px;background:#392D34;padding:13px;margin:0 0 13px}
+.clear-notifications-confirm p{color:#F2DFE2;font-size:.76rem;line-height:1.6;margin-bottom:11px;overflow-wrap:anywhere}
+.clear-notifications-confirm .button-row{gap:8px}
+.clear-notifications-message{font-size:.78rem;line-height:1.6;color:#E8C389;overflow-wrap:anywhere;margin:6px 0 14px}

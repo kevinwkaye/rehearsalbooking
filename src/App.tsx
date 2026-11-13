@@ -104,13 +104,28 @@ function ProposalVoteCard({proposal,votes,myId,onResult,compact=false}:{proposal
  const relevant=votes.filter(v=>v.request_id===proposal.id);
  const confirmed=relevant.filter(v=>v.decision==='confirmed').length;
  const mine=relevant.find(v=>v.user_id===myId);
- const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[declining,setDeclining]=useState(false),[declineReason,setDeclineReason]=useState('');
  async function respond(confirm:boolean){if(!navigator.onLine){setError('Reconnect to respond to this practice.');return;}setBusy(true);setError('');try{
-  const result=await rpc<string>('respond_practice',{p_request:proposal.id,p_confirm:confirm});onResult(result);
+  const result=await rpc<string>('respond_practice',{p_request:proposal.id,p_confirm:confirm,p_reason:confirm?null:declineReason.trim()||null});onResult(result);
  }catch(e){setError(readableError(e));}finally{setBusy(false);}}
  return <article className={`practice-confirmation ${compact?'compact':''}`}>
   <div className="practice-confirmation-copy"><strong>{describeDate(proposal.practice_date)}</strong><span>{proposal.start_time.slice(0,5)} · {confirmed} of {proposal.expected_confirmations} confirmed</span></div>
-  {mine?.decision==='awaiting'?<div className="practice-confirmation-buttons"><button className="button primary small" disabled={busy} onClick={()=>void respond(true)}>Confirm</button><button className="button subtle small" disabled={busy} onClick={()=>void respond(false)}>Decline</button></div>:<span className="practice-voted">{mine?.decision==='confirmed'?'Your vote: confirmed':'Waiting for the band'}</span>}
+  {mine?.decision==='awaiting'?<div className="practice-decline-controls">
+    <div className="practice-confirmation-buttons">
+      <button type="button" className="button primary small" disabled={busy} onClick={()=>void respond(true)}>Confirm</button>
+      {!declining&&<button type="button" className="button subtle small" disabled={busy} onClick={()=>{setDeclining(true);setError('');}}>Decline</button>}
+    </div>
+    {declining&&<div className="decline-reason-panel">
+      <label>Reason for declining (optional)
+        <textarea rows={3} maxLength={200} value={declineReason} onChange={e=>setDeclineReason(e.target.value)} placeholder="Let your bandmates know why…" />
+      </label>
+      <small className="reason-counter">{declineReason.length}/200 characters</small>
+      <div className="button-row">
+        <button type="button" className="button subtle small" disabled={busy} onClick={()=>{setDeclining(false);setDeclineReason('');}}>Back</button>
+        <button type="button" className="button danger small" disabled={busy} onClick={()=>void respond(false)}>{busy?'Declining…':'Confirm decline'}</button>
+      </div>
+    </div>}
+   </div>:<span className="practice-voted">{mine?.decision==='confirmed'?'Your vote: confirmed':'Waiting for the band'}</span>}
   {!compact&&<div className="practice-roster">{relevant.map(v=><span key={v.user_id}><span className={`vote-dot ${v.decision}`}/>{v.member_name}: {v.decision==='confirmed'?'Confirmed':v.decision==='declined'?'Declined':'Waiting'}</span>)}</div>}
   {error&&<div className="notice error" role="alert">{error}</div>}
  </article>;
@@ -118,7 +133,7 @@ function ProposalVoteCard({proposal,votes,myId,onResult,compact=false}:{proposal
 
 function BookingDialog({date,booking,proposal,votes,myId,band,memberBands,admin,onClose,onSaved}:{date:string;booking:Booking|null;proposal:PracticeRequest|null;votes:PracticeConfirmation[];myId:string;band:Band|null;memberBands:Band[];admin:boolean;onClose:()=>void;onSaved:(message?:string)=>void}){
  const [selectedDate,setSelectedDate]=useState(date),[time,setTime]=useState(booking?.start_time?.slice(0,5)||'19:00');
- const [busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmCancel,setConfirmCancel]=useState(false);
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmCancel,setConfirmCancel]=useState(false),[cancelReason,setCancelReason]=useState('');
  const [bookingBandId,setBookingBandId]=useState(memberBands[0]?.id||'');
  const owned=Boolean(booking&&(admin||memberBands.some(b=>b.id===booking.band_id)));
  const canCreate=!booking&&!proposal&&Boolean(bookingBandId);
@@ -128,7 +143,7 @@ function BookingDialog({date,booking,proposal,votes,myId,band,memberBands,admin,
     const {data:created}=await db.from('practice_requests').select('status').eq('id',requestId).maybeSingle();
     onSaved(created?.status==='confirmed'?'Practice booked.':created?.status==='clashed'?'Another band has booked that date. Please choose another.':'Practice requested. Waiting for your band to confirm.');}
  }catch(err){setError(readableError(err));}finally{setBusy(false);}}
- async function cancel(){if(!booking)return;if(!navigator.onLine){setError('You are offline. Please reconnect before cancelling.');return;}setBusy(true);setError('');try{await rpc('cancel_booking',{p_id:booking.id});onSaved('Practice cancelled.');}catch(err){setError(readableError(err));}finally{setBusy(false);}}
+ async function cancel(){if(!booking)return;if(!navigator.onLine){setError('You are offline. Please reconnect before cancelling.');return;}setBusy(true);setError('');try{await rpc('cancel_booking',{p_id:booking.id,p_reason:cancelReason.trim()||null});onSaved('Practice cancelled. Your band has been notified.');}catch(err){setError(readableError(err));}finally{setBusy(false);}}
  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><section className="modal" role="dialog" aria-modal="true" aria-label="Rehearsal booking">
   <div className="modal-header"><span className="eyebrow">REHEARSAL SPACE</span><button aria-label="Close" className="icon-button" onClick={onClose}><X/></button></div>
   <h2>{booking?(owned?'Your booking':'Room unavailable'):proposal?'Band confirmation':'Request practice'}</h2><p className="subdued">{describeDate(date)}</p>
@@ -141,7 +156,16 @@ function BookingDialog({date,booking,proposal,votes,myId,band,memberBands,admin,
     {!booking&&!canCreate&&<p className="helper">Ask the administrator to assign you to a band before requesting a rehearsal.</p>}
     <button className="button primary full" onClick={save} disabled={busy||!booking&&!canCreate}>{busy?'Saving…':booking?'Save changes':'Request practice'}</button>
     {booking&&!confirmCancel&&<button className="button text-danger" onClick={()=>setConfirmCancel(true)}><Trash2 size={16}/> Cancel this practice</button>}
-    {booking&&confirmCancel&&<div className="confirm-box"><strong>Definitely cancel this rehearsal?</strong><p>The day will become available to other bands.</p><div className="button-row"><button className="button subtle" onClick={()=>setConfirmCancel(false)}>Keep booking</button><button className="button danger" disabled={busy} onClick={cancel}>Yes, cancel</button></div></div>}
+    {booking&&confirmCancel&&<div className="confirm-box">
+      <strong>Definitely cancel this rehearsal?</strong><p>The day will become available to other bands and your bandmates will be notified.</p>
+      <label className="cancellation-reason-label">Reason for cancelling (optional)
+        <textarea rows={3} maxLength={200} value={cancelReason} onChange={e=>setCancelReason(e.target.value)} placeholder="Let your bandmates know why…" />
+      </label>
+      <small className="reason-counter">{cancelReason.length}/200 characters</small>
+      <div className="button-row"><button type="button" className="button subtle" disabled={busy} onClick={()=>{setConfirmCancel(false);setCancelReason('');}}>Keep booking</button>
+        <button type="button" className="button danger" disabled={busy} onClick={()=>void cancel()}>{busy?'Cancelling…':'Yes, cancel'}</button>
+      </div>
+    </div>}
    </div>}
     {error&&<div className="notice error" role="alert">{error}</div>}
  </section></div>;
@@ -149,11 +173,25 @@ function BookingDialog({date,booking,proposal,votes,myId,band,memberBands,admin,
 
 function NotificationPanel({notices,userId,requests,votes,onClose,onRefresh,onMessage}:{notices:Notice[];userId:string;requests:PracticeRequest[];votes:PracticeConfirmation[];onClose:()=>void;onRefresh:()=>void;onMessage:(message:string)=>void}){
  const [pushMessage,setPushMessage]=useState('');
- 
+ const [confirmClear,setConfirmClear]=useState(false),[clearing,setClearing]=useState(false),[clearMessage,setClearMessage]=useState('');
+ async function clearNotifications(){
+  if(!notices.length){setConfirmClear(false);return;}
+  setClearing(true);setClearMessage('');
+  try{
+   const ordered=[...notices].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
+   const count=await rpc<number>('clear_my_notifications',{p_through_id:ordered[0].id});
+   setConfirmClear(false);
+   setClearMessage(count===1?'1 notification cleared.':`${count} notifications cleared.`);
+   onRefresh();
+  }catch(err){setClearMessage(readableError(err));}
+  finally{setClearing(false);}
+ }
  return <div className="overlay-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><aside className="side-panel" aria-label="Notifications">
   <div className="panel-heading"><h2>Notifications</h2><button aria-label="Close" className="icon-button" onClick={onClose}><X/></button></div>
   {requests.length>0&&<div className="notification-requests"><h3>Practice confirmations</h3>{requests.map(req=><ProposalVoteCard key={req.id} proposal={req} votes={votes} myId={userId} onResult={r=>{onMessage(r==='confirmed'?'Practice booked.':r==='declined'?'Request declined.':'Response saved.');onRefresh();}} />)}</div>}
-  <div className="push-settings"><p className="push-guidance">iPhone: add 88 Bunkspace to your Home Screen first, then enable alerts here. Android: allow notifications when prompted.</p><button className="button subtle small" onClick={()=>void enablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Enable phone alerts</button><button className="button subtle small" onClick={()=>void disablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Disable phone alerts</button>{pushMessage&&<p role="status" className="fineprint">{pushMessage}</p>}</div>
+  <div className="push-settings"><p className="push-guidance">iPhone: add 88 Bunkspace to your Home Screen first, then enable alerts here. Android: allow notifications when prompted.</p><button className="button subtle small" onClick={()=>void enablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Enable phone alerts</button><button className="button subtle small" onClick={()=>void disablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Disable phone alerts</button><button type="button" className="button subtle small" disabled={notices.length===0||clearing} onClick={()=>{setClearMessage('');setConfirmClear(true);}}>Clear notifications</button>{pushMessage&&<p role="status" className="fineprint">{pushMessage}</p>}</div>
+  {confirmClear&&<div className="clear-notifications-confirm" role="group" aria-label="Confirm clearing notification history"><p>Clear your {notices.length} notification{notices.length===1?'':'s'}? This removes past messages, not pending practice confirmations or phone alert settings.</p><div className="button-row"><button type="button" className="button subtle small" disabled={clearing} onClick={()=>setConfirmClear(false)}>Keep notifications</button><button type="button" className="button danger small" disabled={clearing} onClick={()=>void clearNotifications()}>{clearing?'Clearing…':'Yes, clear'}</button></div></div>}
+  {clearMessage&&<p className="clear-notifications-message" role="status">{clearMessage}</p>}
   {notices.length===0?<p className="empty">Nothing new.</p>:notices.map(n=><div key={n.id} className={`notice-item ${n.read_at?'':'unread'}`}><span className="notice-dot"/><span><strong>{n.title}</strong><small>{n.body}</small><em>{new Date(n.created_at).toLocaleString('en-GB')}</em></span></div>)}
  </aside></div>;
 }

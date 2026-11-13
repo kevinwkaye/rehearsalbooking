@@ -1,6 +1,6 @@
 # 88 Bunkspace | Scenario-based UAT checklist
 
-**Release:** BBBWP0.3.1 help/contact tidy-up, following BBBWP0.3.
+**Release:** BBBWP0.4 consolidated sign-off. Includes earlier same-day branding/help changes already merged plus the new cancellation/decline alerts and clear-notifications workflow.
 **Test on:** https://88-bunkspace.pages.dev/ (Android Chrome/PWA and a desktop browser)
 **Roles:** Admin, approved member of one band, approved member of two bands, pending member, deactivated member.
 **Before testing:** Use dedicated test accounts and future rehearsal dates. Do **not** delete real band members or bookings. Record screenshots, date tested, expected and actual outcomes and any issues.
@@ -70,3 +70,19 @@
 | E: Branding and static guide | | | | |
 
 **Release blocker:** All account permissions, booking conflict, recovery-email and phone-push critical scenarios must pass. Report any regression with device, account role, date and steps to reproduce.
+## F. BBBWP0.4 cancellation and notification acceptance
+
+- [ ] **F1 Cancel with no reason.** From an approved member account cancel a confirmed test rehearsal. **Expected:** Room date freed, all currently approved members of that band (including person cancelling) each receive one in-app notice. Members with active push subscriptions receive a phone notification. Members of other bands receive the room-available alert.
+- [ ] **F2 Cancel with reason.** Cancel a confirmed test rehearsal with a short reason. **Expected:** Affected band's notice contains the reason; alerts to other bands DO NOT reveal the private reason.
+- [ ] **F3 Decline without reason.** Have one member decline a pending request. **Expected:** Explicit confirmation prompt, request cancelled, all other approved band members receive an alert, date not reserved, no duplicate alerts.
+- [ ] **F4 Decline with reason.** Decline a pending request and enter a reason. **Expected:** Other approved members of that band receive a notification saying request cancelled and showing reason. The decliner sees the successful action in-app.
+- [ ] **F5 Reason limit.** Try 0, 200, and more than 200 characters on both flows. **Expected:** Blank accepted; exactly 200 accepted; textbox blocks further typing; direct database calls with more than 200 characters rejected.
+- [ ] **F6 Old app compatibility.** From an old session/client that omits the reason parameter, attempt a cancellation and a decline in a dedicated test scenario. **Expected:** Original two/one-argument functions remain callable and safely use no reason.
+- [ ] **F7 Clear own notification history.** Open bell, tap Clear notifications, cancel the confirmation, repeat and confirm. **Expected:** Only personal existing notices disappear after confirmation; pending practice confirmations remain actionable; phone notification settings and other members' notices stay untouched.
+- [ ] **F8 New alert while clearing.** If a notice arrives after clearing was initiated, it must not be removed by the clear operation for notices previously on screen.
+- [ ] **F9 No authorisation bypass.** Unapproved users and members of unrelated bands cannot cancel or decline each other's rehearsals, or clear another member's notifications.
+- [ ] **F10 Mobile 320px/390px.** All cancellation/decline reason boxes, counters, modal controls, and Clear notifications controls remain inside the viewport and scroll correctly.
+
+## Outstanding release configuration
+
+The app's deactivated-account contact link needs the verified Gmail mailbox in Cloudflare Production as `VITE_SUPPORT_EMAIL` for both Pages projects. Do not guess or reinstate the old Proton address. Rebuild both sites after entering it.
