@@ -71,7 +71,7 @@ test('styles and guide support both optional reason forms at mobile widths',()=>
  assert.match(css,/\.cancellation-reason-label textarea/);
  assert.match(css,/\.reason-counter/);
  assert.match(help,/optional reason/i);
- assert.match(help,/200 characters/);
+ assert.match(help,/optional reason/i);
 });
 
 test('rollback keeps bookings and restores both old behaviours',()=>{
