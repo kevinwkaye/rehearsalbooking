@@ -8,10 +8,10 @@
   "theme_color": "#171A20",
   "icons": [
     {
-      "src": "/pwa-icon.svg",
+      "src": "/pwa-full-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
