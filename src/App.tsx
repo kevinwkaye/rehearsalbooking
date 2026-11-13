@@ -307,7 +307,7 @@ export default function App(){
  const [month,setMonth]=useState(()=>{const today=todayInLondon().split('-').map(Number);return {year:today[0],month:today[1]-1};});
  useEffect(()=>{if(!session||!profile||profile.status!=='approved')return;
   const query=new URLSearchParams(window.location.search);
-  if(query.has('admin')&&profile.role==='admin'){
+  if(query.has('admin')&&(profile.role==='admin'||profile.role==='superadmin')){
    setPanel('admin');query.delete('admin');window.history.replaceState({},'',window.location.pathname+(query.size?'?'+query.toString():''));
    window.setTimeout(()=>document.getElementById('pending-accounts')?.scrollIntoView({block:'start'}),100);
   }else if(query.has('notifications')){
@@ -328,7 +328,7 @@ export default function App(){
     const [br,bb,nn,pr,pv,mb]=await Promise.all([db.from('bands').select('*').is('archived_at',null).order('name'),db.from('bookings').select('*').order('practice_date'),db.from('notifications').select('*').order('created_at',{ascending:false}).limit(70),db.from('practice_requests').select('*').order('created_at',{ascending:false}).limit(100),db.from('practice_confirmations').select('*'),db.from('band_memberships').select('*')]);
     if(br.error||bb.error||nn.error||pr.error||pv.error||mb.error)throw br.error||bb.error||nn.error||pr.error||pv.error||mb.error;
     setBands((br.data||[]) as Band[]);setBookings((bb.data||[]) as Booking[]);setNotices((nn.data||[]) as Notice[]);setPracticeRequests((pr.data||[]) as PracticeRequest[]);setPracticeVotes((pv.data||[]) as PracticeConfirmation[]);setMemberships((mb.data||[]) as BandMembership[]);
-    if(user.role==='admin'){const [all,history]=await Promise.all([db.from('profiles').select('*').order('created_at',{ascending:false}),db.from('audit_events').select('*').order('created_at',{ascending:false}).limit(30)]);if(all.error||history.error)throw all.error||history.error;setProfiles((all.data||[]) as Profile[]);setAudits((history.data||[]) as Audit[]);}
+    if(user.role==='admin'||user.role==='superadmin'){const [all,history]=await Promise.all([db.from('profiles').select('*').order('created_at',{ascending:false}),db.from('audit_events').select('*').order('created_at',{ascending:false}).limit(30)]);if(all.error||history.error)throw all.error||history.error;setProfiles((all.data||[]) as Profile[]);setAudits((history.data||[]) as Audit[]);}
     setError('');
    }catch(e){setError(readableError(e));}finally{setFetching(false);setLoading(false);}
  },[]);
@@ -361,7 +361,7 @@ export default function App(){
  const selectedRequest=chosen?ownPendingRequests.find(r=>r.practice_date===chosen)||null:null;
  const awaitingMyVote=ownPendingRequests.filter(r=>practiceVotes.some(v=>v.request_id===r.id&&v.user_id===profile?.id&&v.decision==='awaiting'));
  const selectedBand=selectedBooking?bands.find(b=>b.id===selectedBooking.band_id)||null:null;
- const approved=profile?.status==='approved',admin=profile?.role==='admin';
+ const approved=profile?.status==='approved',admin=profile?.role==='admin'||profile?.role==='superadmin';
  function monthBy(delta:number){const date=new Date(Date.UTC(month.year,month.month+delta,1));const today=todayInLondon().slice(0,7);const target=`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`;if(target<today)return;setMonth({year:date.getUTCFullYear(),month:date.getUTCMonth()});}
  const viewingCurrentMonth=`${month.year}-${String(month.month+1).padStart(2,'0')}`<=currentDate.slice(0,7);
  useEffect(()=>{const current=todayInLondon().slice(0,7);const displayed=`${month.year}-${String(month.month+1).padStart(2,'0')}`;if(displayed<current){const [y,m]=current.split('-').map(Number);setMonth({year:y,month:m-1});}},[month.year,month.month,currentDate]);
