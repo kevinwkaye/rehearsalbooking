@@ -171,9 +171,44 @@ function BookingDialog({date,booking,proposal,votes,myId,band,memberBands,admin,
  </section></div>;
 }
 
-function NotificationPanel({notices,userId,requests,votes,onClose,onRefresh,onMessage}:{notices:Notice[];userId:string;requests:PracticeRequest[];votes:PracticeConfirmation[];onClose:()=>void;onRefresh:()=>void;onMessage:(message:string)=>void}){
+type AdminAlertPrefs={registration_alerts:boolean;all_band_booking_alerts:boolean;all_band_cancellation_alerts:boolean};
+const DEFAULT_ADMIN_ALERT_PREFS:AdminAlertPrefs={registration_alerts:true,all_band_booking_alerts:false,all_band_cancellation_alerts:false};
+
+function NotificationPanel({notices,userId,requests,votes,isAdmin,onClose,onRefresh,onMessage}:{notices:Notice[];userId:string;requests:PracticeRequest[];votes:PracticeConfirmation[];isAdmin:boolean;onClose:()=>void;onRefresh:()=>void;onMessage:(message:string)=>void}){
  const [pushMessage,setPushMessage]=useState('');
  const [confirmClear,setConfirmClear]=useState(false),[clearing,setClearing]=useState(false),[clearMessage,setClearMessage]=useState('');
+ const [alertPrefs,setAlertPrefs]=useState<AdminAlertPrefs>({...DEFAULT_ADMIN_ALERT_PREFS});
+ const [prefsLoading,setPrefsLoading]=useState(isAdmin),[prefsSaving,setPrefsSaving]=useState(false),[prefsMessage,setPrefsMessage]=useState('');
+ useEffect(()=>{
+  if(!isAdmin)return;
+  let active=true;
+  void (async()=>{
+   try{
+    const {data,error}=await db.from('admin_notification_preferences')
+      .select('registration_alerts,all_band_booking_alerts,all_band_cancellation_alerts')
+      .eq('user_id',userId).maybeSingle();
+    if(error)throw error;
+    if(active)setAlertPrefs(data?{
+      registration_alerts:data.registration_alerts,
+      all_band_booking_alerts:data.all_band_booking_alerts,
+      all_band_cancellation_alerts:data.all_band_cancellation_alerts
+    }:{...DEFAULT_ADMIN_ALERT_PREFS});
+   }catch(e){if(active)setPrefsMessage(readableError(e));}
+   finally{if(active)setPrefsLoading(false);}
+  })();
+  return()=>{active=false;};
+ },[isAdmin,userId]);
+ async function saveAlertPrefs(){
+  setPrefsSaving(true);setPrefsMessage('');
+  try{
+   const {error}=await db.from('admin_notification_preferences').upsert({
+    user_id:userId,...alertPrefs,updated_at:new Date().toISOString()
+   },{onConflict:'user_id'});
+   if(error)throw error;
+   setPrefsMessage('Notification preferences saved.');
+  }catch(e){setPrefsMessage(readableError(e));}
+  finally{setPrefsSaving(false);}
+ }
  async function clearNotifications(){
   if(!notices.length){setConfirmClear(false);return;}
   setClearing(true);setClearMessage('');
@@ -190,6 +225,17 @@ function NotificationPanel({notices,userId,requests,votes,onClose,onRefresh,onMe
   <div className="panel-heading"><h2>Notifications</h2><button aria-label="Close" className="icon-button" onClick={onClose}><X/></button></div>
   {requests.length>0&&<div className="notification-requests"><h3>Practice confirmations</h3>{requests.map(req=><ProposalVoteCard key={req.id} proposal={req} votes={votes} myId={userId} onResult={r=>{onMessage(r==='confirmed'?'Practice booked.':r==='declined'?'Request declined.':'Response saved.');onRefresh();}} />)}</div>}
   <div className="push-settings"><p className="push-guidance">iPhone: add 88 Bunkspace to your Home Screen first, then enable alerts here. Android: allow notifications when prompted.</p><button className="button subtle small" onClick={()=>void enablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Enable phone alerts</button><button className="button subtle small" onClick={()=>void disablePush(userId).then(setPushMessage).catch(e=>setPushMessage(readableError(e)))}>Disable phone alerts</button><button type="button" className="button subtle small" disabled={notices.length===0||clearing} onClick={()=>{setClearMessage('');setConfirmClear(true);}}>Clear notifications</button>{pushMessage&&<p role="status" className="fineprint">{pushMessage}</p>}</div>
+  {isAdmin&&<section className="admin-alert-settings" aria-label="Admin notification preferences">
+    <h3>Admin alerts</h3>
+    <p className="admin-alert-description">Choose which room-wide updates you receive. Your own band's rehearsal confirmations are unaffected.</p>
+    {prefsLoading?<p className="helper">Loading preferences…</p>:<>
+      <label className="admin-alert-toggle"><input type="checkbox" checked={alertPrefs.registration_alerts} onChange={e=>{setAlertPrefs(p=>({...p,registration_alerts:e.target.checked}));setPrefsMessage('');}}/><span><strong>New member registrations</strong><small>Get notified when an account needs approval.</small></span></label>
+      <label className="admin-alert-toggle"><input type="checkbox" checked={alertPrefs.all_band_booking_alerts} onChange={e=>{setAlertPrefs(p=>({...p,all_band_booking_alerts:e.target.checked}));setPrefsMessage('');}}/><span><strong>Bookings from all bands</strong><small>Optional alerts when another band confirms a practice.</small></span></label>
+      <label className="admin-alert-toggle"><input type="checkbox" checked={alertPrefs.all_band_cancellation_alerts} onChange={e=>{setAlertPrefs(p=>({...p,all_band_cancellation_alerts:e.target.checked}));setPrefsMessage('');}}/><span><strong>Cancellations from all bands</strong><small>Optional alerts when another band cancels a confirmed practice.</small></span></label>
+      <button type="button" className="button primary small" disabled={prefsSaving} onClick={()=>void saveAlertPrefs()}>{prefsSaving?'Saving…':'Save notification choices'}</button>
+    </>}
+    {prefsMessage&&<p role="status" className="admin-alert-status">{prefsMessage}</p>}
+   </section>}
   {confirmClear&&<div className="clear-notifications-confirm" role="group" aria-label="Confirm clearing notification history"><p>Clear your {notices.length} notification{notices.length===1?'':'s'}? This removes past messages, not pending practice confirmations or phone alert settings.</p><div className="button-row"><button type="button" className="button subtle small" disabled={clearing} onClick={()=>setConfirmClear(false)}>Keep notifications</button><button type="button" className="button danger small" disabled={clearing} onClick={()=>void clearNotifications()}>{clearing?'Clearing…':'Yes, clear'}</button></div></div>}
   {clearMessage&&<p className="clear-notifications-message" role="status">{clearMessage}</p>}
   {notices.length===0?<p className="empty">Nothing new.</p>:notices.map(n=><div key={n.id} className={`notice-item ${n.read_at?'':'unread'}`}><span className="notice-dot"/><span><strong>{n.title}</strong><small>{n.body}</small><em>{new Date(n.created_at).toLocaleString('en-GB')}</em></span></div>)}
@@ -404,6 +450,6 @@ export default function App(){
     </>}
     </main>
    {chosen&&<BookingDialog key={chosen+String(selectedBooking?.id)+String(selectedRequest?.id)} date={chosen} booking={selectedBooking} proposal={selectedRequest} votes={practiceVotes} myId={profile.id} band={selectedBand||ownBands[0]||null} memberBands={ownBands} admin={admin} onClose={()=>setChosen(null)} onSaved={saved}/>}
-   {showNotifications&&<NotificationPanel notices={notices} userId={profile.id} requests={ownPendingRequests} votes={practiceVotes} onClose={()=>setShowNotifications(false)} onRefresh={()=>void refresh()} onMessage={setMessage}/>}
+   {showNotifications&&<NotificationPanel notices={notices} userId={profile.id} requests={ownPendingRequests} votes={practiceVotes} isAdmin={admin} onClose={()=>setShowNotifications(false)} onRefresh={()=>void refresh()} onMessage={setMessage}/>}
  </div>;
 }
