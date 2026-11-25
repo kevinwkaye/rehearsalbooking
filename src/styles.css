@@ -205,3 +205,9 @@ html,body,#root{width:100%;max-width:100%;overflow-x:clip;}
 .notice.dismissible .notice-content{flex:1;min-width:0;overflow-wrap:anywhere}
 .notice.dismissible .mini-close{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;padding:0;margin:-3px -7px 0 0;float:none;border-radius:6px}
 .notice.dismissible .mini-close:hover{background:#FFFFFF1A}
+
+/* BBBWP0.5: optional immediate practice booking */
+.instant-booking-option{padding:14px;border:1px solid #4B5664;border-radius:12px;background:#2C3440}
+.form-stack .instant-booking-check{display:flex;flex-direction:row;align-items:center;gap:11px;color:#F7F8FA;font-weight:800;cursor:pointer}
+.instant-booking-check input[type='checkbox']{width:21px;height:21px;min-height:21px;flex:none;margin:0;accent-color:#EEB574;cursor:pointer}
+.instant-booking-option .helper{margin:9px 0 0 32px;line-height:1.45}
