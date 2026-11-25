@@ -135,10 +135,12 @@ function BookingDialog({date,booking,proposal,votes,myId,band,memberBands,admin,
  const [selectedDate,setSelectedDate]=useState(date),[time,setTime]=useState(booking?.start_time?.slice(0,5)||'19:00');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmCancel,setConfirmCancel]=useState(false),[cancelReason,setCancelReason]=useState('');
  const [bookingBandId,setBookingBandId]=useState(memberBands[0]?.id||'');
+ const [bookWithoutConfirmation,setBookWithoutConfirmation]=useState(false);
  const owned=Boolean(booking&&(admin||memberBands.some(b=>b.id===booking.band_id)));
  const canCreate=!booking&&!proposal&&Boolean(bookingBandId);
  async function save(){if(!navigator.onLine){setError('You are offline. Please reconnect before booking.');return;}setBusy(true);setError('');try{
    if(booking){await rpc('update_booking',{p_id:booking.id,p_date:selectedDate,p_time:time});onSaved('Booking updated.');}
+   else if(bookWithoutConfirmation){await rpc('book_practice_instant',{p_date:selectedDate,p_time:time,p_band:bookingBandId});onSaved('Practice booked. Your band has been notified.');}
    else {const requestId=await rpc<string>('request_practice',{p_date:selectedDate,p_time:time,p_band:bookingBandId});
     const {data:created}=await db.from('practice_requests').select('status').eq('id',requestId).maybeSingle();
     onSaved(created?.status==='confirmed'?'Practice booked.':created?.status==='clashed'?'Another band has booked that date. Please choose another.':'Practice requested. Waiting for your band to confirm.');}
@@ -151,10 +153,11 @@ function BookingDialog({date,booking,proposal,votes,myId,band,memberBands,admin,
   proposal&&!booking?<ProposalVoteCard proposal={proposal} votes={votes} myId={myId} onResult={r=>onSaved(r==='confirmed'?'Everyone confirmed. Practice booked.':r==='declined'?'Practice request declined.':r==='clashed'?'Another band booked first.':'Your confirmation has been saved.')} />:
   <div className="form-stack">
     <label>Practice date<input type="date" min={todayInLondon()} value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}/></label>
-    {!booking&&memberBands.length>1&&<label>Book for band<select value={bookingBandId} onChange={e=>setBookingBandId(e.target.value)}>{memberBands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}{!booking&&memberBands.length===1&&<p className="helper">Your band: {memberBands[0].name}. Other members will be asked to confirm.</p>}
+    {!booking&&memberBands.length>1&&<label>Book for band<select value={bookingBandId} onChange={e=>setBookingBandId(e.target.value)}>{memberBands.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}{!booking&&memberBands.length===1&&<p className="helper">Your band: {memberBands[0].name}.</p>}
     <label>Start time<div className="field-with-icon"><Clock size={18}/><select value={time} onChange={e=>setTime(e.target.value)}>{TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}</select></div></label>
+    {!booking&&canCreate&&<div className="instant-booking-option"><label className="instant-booking-check"><input type="checkbox" checked={bookWithoutConfirmation} onChange={e=>setBookWithoutConfirmation(e.target.checked)}/><span>Book without band confirmation</span></label><p className="helper">{bookWithoutConfirmation?'Your practice will be booked immediately. Your bandmates will be notified but will not need to confirm.':'Leave unticked to ask all band members to confirm the practice.'}</p></div>}
     {!booking&&!canCreate&&<p className="helper">Ask the administrator to assign you to a band before requesting a rehearsal.</p>}
-    <button className="button primary full" onClick={save} disabled={busy||!booking&&!canCreate}>{busy?'Saving…':booking?'Save changes':'Request practice'}</button>
+    <button className="button primary full" onClick={save} disabled={busy||!booking&&!canCreate}>{busy?'Saving…':booking?'Save changes':bookWithoutConfirmation?'Confirm booking':'Request practice'}</button>
     {booking&&!confirmCancel&&<button className="button text-danger" onClick={()=>setConfirmCancel(true)}><Trash2 size={16}/> Cancel this practice</button>}
     {booking&&confirmCancel&&<div className="confirm-box">
       <strong>Definitely cancel this rehearsal?</strong><p>The day will become available to other bands and your bandmates will be notified.</p>
